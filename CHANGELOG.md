@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/vexxhost/openstack_database_exporter/compare/v0.1.0...v0.2.0) (2024-03-30)
+
+
+### Features
+
+* support env variable configuration ([00e3197](https://github.com/vexxhost/openstack_database_exporter/commit/00e3197585dbc986a3da7baa86d6c60e09ab3e2d))
+
 ## 0.1.0 (2024-03-27)
 
 
