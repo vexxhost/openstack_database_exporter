@@ -71,6 +71,20 @@ type NeutronDatabaseCollector struct {
 	l3AgentOfRouter *prometheus.Desc
 }
 
+func newNeutronDatabaseCollector(logger log.Logger, db *gorm.DB) prometheus.Collector {
+	return &NeutronDatabaseCollector{
+		db:     db,
+		logger: logger,
+
+		l3AgentOfRouter: prometheus.NewDesc(
+			"openstack_neutron_l3_agent_of_router",
+			"l3_agent_of_router",
+			[]string{"router_id", "l3_agent_id", "ha_state", "agent_alive", "agent_admin_up", "agent_host"},
+			nil,
+		),
+	}
+}
+
 func NewNeutronDatabaseCollector(logger log.Logger, dsn string) prometheus.Collector {
 	db, err := gorm.Open(
 		mysql.Open(
@@ -84,16 +98,7 @@ func NewNeutronDatabaseCollector(logger log.Logger, dsn string) prometheus.Colle
 		panic("failed to connect database")
 	}
 
-	return &NeutronDatabaseCollector{
-		db: db,
-
-		l3AgentOfRouter: prometheus.NewDesc(
-			"openstack_neutron_l3_agent_of_router",
-			"l3_agent_of_router",
-			[]string{"router_id", "l3_agent_id", "ha_state", "agent_alive", "agent_admin_up", "agent_host"},
-			nil,
-		),
-	}
+	return newNeutronDatabaseCollector(logger, db)
 }
 
 func (c *NeutronDatabaseCollector) Describe(ch chan<- *prometheus.Desc) {
@@ -105,6 +110,7 @@ func (c *NeutronDatabaseCollector) Collect(ch chan<- prometheus.Metric) {
 		"L3Agent", c.db.Select([]string{"id", "heartbeat_timestamp", "admin_state_up", "host"}).Model(&NeutronAgent{}),
 	).Select([]string{"router_id", "l3_agent_id", "state"}).Rows()
 	if err != nil {
+		fmt.Println(c.logger)
 		level.Error(c.logger).Log("msg", "failed to query database", "err", err)
 		return
 	}
