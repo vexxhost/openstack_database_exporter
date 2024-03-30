@@ -110,7 +110,6 @@ func (c *NeutronDatabaseCollector) Collect(ch chan<- prometheus.Metric) {
 		"L3Agent", c.db.Select([]string{"id", "heartbeat_timestamp", "admin_state_up", "host"}).Model(&NeutronAgent{}),
 	).Select([]string{"router_id", "l3_agent_id", "state"}).Rows()
 	if err != nil {
-		fmt.Println(c.logger)
 		level.Error(c.logger).Log("msg", "failed to query database", "err", err)
 		return
 	}
@@ -130,5 +129,4 @@ func (c *NeutronDatabaseCollector) Collect(ch chan<- prometheus.Metric) {
 			prometheus.GaugeValue, float64(state), binding.RouterID.String(), binding.L3Agent.ID.String(),
 			string(binding.State), strconv.FormatBool(binding.L3Agent.Alive()), strconv.FormatBool(binding.L3Agent.AdminStateUp), binding.L3Agent.Host)
 	}
-
 }

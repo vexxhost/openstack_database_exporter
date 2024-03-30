@@ -26,6 +26,10 @@ var (
 		"neutron.dsn",
 		"DSN for Neutron",
 	).Required().String()
+	octaviaDSN = kingpin.Flag(
+		"octavia.dsn",
+		"DSN for Octavia",
+	).Required().String()
 	toolkitFlags = webflag.AddFlags(kingpin.CommandLine, ":9180")
 )
 
@@ -43,7 +47,10 @@ func main() {
 	level.Info(logger).Log("msg", "Build context", "build_context", version.BuildContext())
 
 	reg := prometheus.NewRegistry()
-	reg.MustRegister(collector.NewNeutronDatabaseCollector(logger, *neutronDSN))
+	reg.MustRegister(
+		collector.NewNeutronDatabaseCollector(logger, *neutronDSN),
+		collector.NewOctaviaDatabaseCollector(logger, *octaviaDSN),
+	)
 
 	http.Handle(*metricsPath, promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg}))
 	if *metricsPath != "/" && *metricsPath != "" {
