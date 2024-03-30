@@ -25,11 +25,11 @@ var (
 	neutronDSN = kingpin.Flag(
 		"neutron.dsn",
 		"DSN for Neutron",
-	).Required().String()
+	).Envar("NEUTRON_DSN").Required().String()
 	octaviaDSN = kingpin.Flag(
 		"octavia.dsn",
 		"DSN for Octavia",
-	).Required().String()
+	).Envar("OCTAVIA_DSN").Required().String()
 	toolkitFlags = webflag.AddFlags(kingpin.CommandLine, ":9180")
 )
 
