@@ -26,6 +26,10 @@ var (
 		"neutron.dsn",
 		"DSN for Neutron",
 	).Envar("NEUTRON_DSN").Required().String()
+	novaDSN = kingpin.Flag(
+		"nova.dsn",
+		"DSN for Nova",
+	).Envar("NOVA_DSN").Required().String()
 	octaviaDSN = kingpin.Flag(
 		"octavia.dsn",
 		"DSN for Octavia",
@@ -49,6 +53,7 @@ func main() {
 	reg := prometheus.NewRegistry()
 	reg.MustRegister(
 		collector.NewNeutronDatabaseCollector(logger, *neutronDSN),
+		collector.NewNovaDatabaseCollector(logger, *novaDSN),
 		collector.NewOctaviaDatabaseCollector(logger, *octaviaDSN),
 	)
 

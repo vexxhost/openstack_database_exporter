@@ -42,5 +42,6 @@ func (suite *BaseOpenStackTestSuite) TearDownTest() {
 
 func TestOpenStackSuites(t *testing.T) {
 	suite.Run(t, &NeutronTestSuite{BaseOpenStackTestSuite: BaseOpenStackTestSuite{}})
+	suite.Run(t, &NovaTestSuite{BaseOpenStackTestSuite: BaseOpenStackTestSuite{}})
 	suite.Run(t, &OctaviaTestSuite{BaseOpenStackTestSuite: BaseOpenStackTestSuite{}})
 }
