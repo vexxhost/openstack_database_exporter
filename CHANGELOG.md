@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/vexxhost/openstack_database_exporter/compare/v0.2.0...v0.3.0) (2024-04-18)
+
+
+### Features
+
+* **nova:** add openstack_nova_server_task_state ([101a97e](https://github.com/vexxhost/openstack_database_exporter/commit/101a97e324d1ac8321ff773735ef41c49062bfbe))
+
 ## [0.2.0](https://github.com/vexxhost/openstack_database_exporter/compare/v0.1.0...v0.2.0) (2024-03-30)
 
 
