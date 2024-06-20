@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.2](https://github.com/vexxhost/openstack_database_exporter/compare/v0.4.1...v0.4.2) (2024-06-20)
+
+
+### Bug Fixes
+
+* open correct collector ([581bdd0](https://github.com/vexxhost/openstack_database_exporter/commit/581bdd0ca9b127442ce413e042a517e5c8d3fc76))
+
 ## [0.4.1](https://github.com/vexxhost/openstack_database_exporter/compare/v0.4.0...v0.4.1) (2024-06-20)
 
 
