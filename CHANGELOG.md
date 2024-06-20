@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/vexxhost/openstack_database_exporter/compare/v0.4.0...v0.4.1) (2024-06-20)
+
+
+### Bug Fixes
+
+* nova-api dsn config ([28041ac](https://github.com/vexxhost/openstack_database_exporter/commit/28041ac2b8e5f3d7e9f5e50660e69460654eca38))
+
 ## [0.4.0](https://github.com/vexxhost/openstack_database_exporter/compare/v0.3.0...v0.4.0) (2024-06-20)
 
 
