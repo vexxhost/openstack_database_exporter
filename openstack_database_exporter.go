@@ -31,7 +31,7 @@ var (
 		"DSN for Nova",
 	).Envar("NOVA_DSN").Required().String()
 	novaApiDSN = kingpin.Flag(
-		"nova.dsn",
+		"nova-api.dsn",
 		"DSN for Nova API",
 	).Envar("NOVA_API_DSN").Required().String()
 	octaviaDSN = kingpin.Flag(
