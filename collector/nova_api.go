@@ -54,7 +54,7 @@ func NewNovaApiDatabaseCollector(logger log.Logger, dsn string) prometheus.Colle
 		panic("failed to connect database")
 	}
 
-	return newNovaCollector(logger, db)
+	return newNovaApiCollector(logger, db)
 }
 
 func (c *NovaApiDatabaseCollector) Describe(ch chan<- *prometheus.Desc) {
