@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/vexxhost/openstack_database_exporter/compare/v0.3.0...v0.4.0) (2024-06-20)
+
+
+### Features
+
+* Add openstack_nova_api_build_request ([a55fc8c](https://github.com/vexxhost/openstack_database_exporter/commit/a55fc8c7544442dbb53b2e9f28b9e116948793ea))
+
 ## [0.3.0](https://github.com/vexxhost/openstack_database_exporter/compare/v0.2.0...v0.3.0) (2024-04-18)
 
 
