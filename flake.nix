@@ -21,9 +21,11 @@
               buildInputs = with pkgs; [
                 cargo
                 clippy
+                libmysqlclient
                 rust-analyzer
                 rustc
                 rustfmt
+                sqlite
               ];
             };
         }
