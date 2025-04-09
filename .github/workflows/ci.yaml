@@ -1,0 +1,25 @@
+name: ci
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  actions: read
+  contents: write
+  id-token: write
+  packages: write
+  security-events: write
+
+jobs:
+  cargo:
+    uses: vexxhost/github-actions/.github/workflows/cargo.yml@main
+
+  image:
+    uses: vexxhost/github-actions/.github/workflows/image.yml@main
+    with:
+      image-ref: ghcr.io/${{ github.repository_owner }}/openstack-database-exporter
+      push: ${{ github.event_name == 'push' }}

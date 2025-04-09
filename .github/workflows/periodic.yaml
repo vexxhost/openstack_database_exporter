@@ -1,0 +1,17 @@
+name: periodic
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: vexxhost/github-actions/scan-image@main
+        with:
+          image-ref: ghcr.io/${{ github.repository_owner }}/ubuntu:edge
