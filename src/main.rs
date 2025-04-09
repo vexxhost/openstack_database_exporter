@@ -67,13 +67,19 @@ async fn main() {
     prometheus::register(Box::new(nova_api)).unwrap();
     prometheus::register(Box::new(octavia)).unwrap();
 
-    let app = Router::new().route("/metrics", get(metrics));
+    let app = Router::new()
+        .route("/", get(root))
+        .route("/metrics", get(metrics));
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:9180").await.unwrap();
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())
         .await
         .unwrap();
+}
+
+async fn root() -> impl IntoResponse {
+    (StatusCode::OK, "OpenStack Exporter\n".to_string())
 }
 
 async fn metrics() -> impl IntoResponse {
