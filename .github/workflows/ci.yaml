@@ -19,7 +19,10 @@ jobs:
     uses: vexxhost/github-actions/.github/workflows/cargo.yml@main
 
   image:
-    uses: vexxhost/github-actions/.github/workflows/image.yml@main
+    uses: vexxhost/github-actions/.github/workflows/nix-image.yaml@main
+    permissions:
+      id-token: write
+      contents: read
+      packages: write
     with:
-      image-ref: ghcr.io/${{ github.repository_owner }}/openstack-database-exporter
-      push: ${{ github.event_name == 'push' }}
+      push: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
