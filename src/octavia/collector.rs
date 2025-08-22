@@ -261,7 +261,7 @@ impl OctaviaCollector {
             }
         };
 
-        self.loadbalancer_status.reset();
+        self.amphora_status.reset();
 
         data.iter().for_each(|amphora_inst| {
             let value = match amphora_inst.status.as_str() {
