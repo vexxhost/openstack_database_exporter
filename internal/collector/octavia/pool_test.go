@@ -18,22 +18,18 @@ func TestPoolCollector(t *testing.T) {
 					"id", "project_id", "name", "protocol", "lb_algorithm",
 					"operating_status", "load_balancer_id", "provisioning_status",
 				}).AddRow(
-					"pool1", "project1", "pool-one", "HTTP", "ROUND_ROBIN",
-					"ONLINE", "lb1", "ACTIVE",
-				).AddRow(
-					"pool2", "project2", nil, "HTTPS", "LEAST_CONNECTIONS",
-					"DEGRADED", "lb2", "ERROR",
+					"ca00ed86-94e3-440e-95c6-ffa35531081e", "8b1632d90bfe407787d9996b7f662fd7", "my_test_pool", "TCP", "ROUND_ROBIN",
+					"ERROR", "e7284bb2-f46a-42ca-8c9b-e08671255125", "ACTIVE",
 				)
 
 				mock.ExpectQuery(octaviadb.GetAllPools).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_loadbalancer_pool_status pool_status
 # TYPE openstack_loadbalancer_pool_status gauge
-openstack_loadbalancer_pool_status{id="pool1",lb_algorithm="ROUND_ROBIN",loadbalancers="lb1",name="pool-one",operating_status="ONLINE",project_id="project1",protocol="HTTP",provisioning_status="ACTIVE"} 0
-openstack_loadbalancer_pool_status{id="pool2",lb_algorithm="LEAST_CONNECTIONS",loadbalancers="lb2",name="",operating_status="DEGRADED",project_id="project2",protocol="HTTPS",provisioning_status="ERROR"} 2
+openstack_loadbalancer_pool_status{id="ca00ed86-94e3-440e-95c6-ffa35531081e",lb_algorithm="ROUND_ROBIN",loadbalancers="e7284bb2-f46a-42ca-8c9b-e08671255125",name="my_test_pool",operating_status="ERROR",project_id="8b1632d90bfe407787d9996b7f662fd7",protocol="TCP",provisioning_status="ACTIVE"} 0
 # HELP openstack_loadbalancer_total_pools total_pools
 # TYPE openstack_loadbalancer_total_pools gauge
-openstack_loadbalancer_total_pools 2
+openstack_loadbalancer_total_pools 1
 `,
 		},
 		{

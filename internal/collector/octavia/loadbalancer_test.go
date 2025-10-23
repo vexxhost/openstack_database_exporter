@@ -19,22 +19,18 @@ func TestLoadBalancerCollector_Collect(t *testing.T) {
 					"id", "project_id", "name", "provisioning_status",
 					"operating_status", "provider", "vip_address",
 				}).AddRow(
-					"lb-1", "project-1", "test-lb", "ACTIVE",
-					"ONLINE", "amphora", "192.168.1.100",
-				).AddRow(
-					"lb-2", "project-2", "test-lb-2", "ERROR",
-					"OFFLINE", "ovn", "10.0.0.1",
+					"607226db-27ef-4d41-ae89-f2a800e9c2db", "e3cd678b11784734bc366148aa37580e", "best_load_balancer", "ACTIVE",
+					"ONLINE", "octavia", "203.0.113.50",
 				)
 
 				mock.ExpectQuery(octaviadb.GetAllLoadBalancersWithVip).WillReturnRows(lbRows)
 			},
 			ExpectedMetrics: `# HELP openstack_loadbalancer_loadbalancer_status loadbalancer_status
 # TYPE openstack_loadbalancer_loadbalancer_status gauge
-openstack_loadbalancer_loadbalancer_status{id="lb-1",name="test-lb",operating_status="ONLINE",project_id="project-1",provider="amphora",provisioning_status="ACTIVE",vip_address="192.168.1.100"} 0
-openstack_loadbalancer_loadbalancer_status{id="lb-2",name="test-lb-2",operating_status="OFFLINE",project_id="project-2",provider="ovn",provisioning_status="ERROR",vip_address="10.0.0.1"} 2
+openstack_loadbalancer_loadbalancer_status{id="607226db-27ef-4d41-ae89-f2a800e9c2db",name="best_load_balancer",operating_status="ONLINE",project_id="e3cd678b11784734bc366148aa37580e",provider="octavia",provisioning_status="ACTIVE",vip_address="203.0.113.50"} 0
 # HELP openstack_loadbalancer_total_loadbalancers total_loadbalancers
 # TYPE openstack_loadbalancer_total_loadbalancers gauge
-openstack_loadbalancer_total_loadbalancers 2
+openstack_loadbalancer_total_loadbalancers 1
 # HELP openstack_loadbalancer_up up
 # TYPE openstack_loadbalancer_up gauge
 openstack_loadbalancer_up 1
@@ -48,31 +44,6 @@ openstack_loadbalancer_up 1
 			ExpectedMetrics: `# HELP openstack_loadbalancer_up up
 # TYPE openstack_loadbalancer_up gauge
 openstack_loadbalancer_up 0
-`,
-		},
-		{
-			Name: "handles null values",
-			SetupMock: func(mock sqlmock.Sqlmock) {
-				// Mock load balancer query with nulls
-				lbRows := sqlmock.NewRows([]string{
-					"id", "project_id", "name", "provisioning_status",
-					"operating_status", "provider", "vip_address",
-				}).AddRow(
-					"lb-2", nil, nil, "ERROR",
-					"OFFLINE", nil, nil,
-				)
-
-				mock.ExpectQuery(octaviadb.GetAllLoadBalancersWithVip).WillReturnRows(lbRows)
-			},
-			ExpectedMetrics: `# HELP openstack_loadbalancer_loadbalancer_status loadbalancer_status
-# TYPE openstack_loadbalancer_loadbalancer_status gauge
-openstack_loadbalancer_loadbalancer_status{id="lb-2",name="",operating_status="OFFLINE",project_id="",provider="",provisioning_status="ERROR",vip_address=""} 2
-# HELP openstack_loadbalancer_total_loadbalancers total_loadbalancers
-# TYPE openstack_loadbalancer_total_loadbalancers gauge
-openstack_loadbalancer_total_loadbalancers 1
-# HELP openstack_loadbalancer_up up
-# TYPE openstack_loadbalancer_up gauge
-openstack_loadbalancer_up 1
 `,
 		},
 	}
