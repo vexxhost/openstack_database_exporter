@@ -1,0 +1,10 @@
+version: "2"
+
+sql:
+  - engine: "mysql"
+    schema: "sql/neutron/schema.sql"
+    queries: "sql/neutron/queries.sql"
+    gen:
+      go:
+        package: "neutron"
+        out: "internal/db/neutron"

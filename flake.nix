@@ -108,8 +108,10 @@
 
           inputsFrom = builtins.attrValues self.packages.${system};
           buildInputs = with pkgs; [
+            go
             libmysqlclient
             rust-analyzer
+            sqlc
             sqlite
           ];
         };
