@@ -109,6 +109,7 @@
           inputsFrom = builtins.attrValues self.packages.${system};
           buildInputs = with pkgs; [
             go
+            golangci-lint
             libmysqlclient
             rust-analyzer
             sqlc

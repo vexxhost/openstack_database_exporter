@@ -28,7 +28,6 @@ func RunCollectorTests[T prometheus.Collector](t *testing.T, tests []CollectorTe
 		t.Run(tt.Name, func(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
 
 			tt.SetupMock(mock)
 
@@ -43,7 +42,10 @@ func RunCollectorTests[T prometheus.Collector](t *testing.T, tests []CollectorTe
 					assert.NoError(t, err)
 				}
 			} else {
-				testutil.CollectAndLint(collector)
+				problems, err := testutil.CollectAndLint(collector)
+
+				assert.Len(t, problems, 0)
+				assert.NoError(t, err)
 			}
 
 			assert.NoError(t, mock.ExpectationsWereMet())
