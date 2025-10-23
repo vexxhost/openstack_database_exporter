@@ -8,3 +8,19 @@ sql:
       go:
         package: "neutron"
         out: "internal/db/neutron"
+        emit_exported_queries: true
+  # - engine: "mysql"
+  #   schema: "sql/nova/schema.sql"
+  #   queries: "sql/nova/queries.sql"
+  #   gen:
+  #     go:
+  #       package: "nova"
+  #       out: "internal/db/nova"
+  - engine: "mysql"
+    schema: "sql/octavia/schema.sql"
+    queries: "sql/octavia/queries.sql"
+    gen:
+      go:
+        package: "octavia"
+        out: "internal/db/octavia"
+        emit_exported_queries: true

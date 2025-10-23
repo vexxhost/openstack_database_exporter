@@ -10,7 +10,7 @@ import (
 	"database/sql"
 )
 
-const getHARouterAgentPortBindingsWithAgents = `-- name: GetHARouterAgentPortBindingsWithAgents :many
+const GetHARouterAgentPortBindingsWithAgents = `-- name: GetHARouterAgentPortBindingsWithAgents :many
 SELECT
     ha.router_id,
     ha.l3_agent_id,
@@ -33,7 +33,7 @@ type GetHARouterAgentPortBindingsWithAgentsRow struct {
 }
 
 func (q *Queries) GetHARouterAgentPortBindingsWithAgents(ctx context.Context) ([]GetHARouterAgentPortBindingsWithAgentsRow, error) {
-	rows, err := q.db.QueryContext(ctx, getHARouterAgentPortBindingsWithAgents)
+	rows, err := q.db.QueryContext(ctx, GetHARouterAgentPortBindingsWithAgents)
 	if err != nil {
 		return nil, err
 	}
