@@ -2,28 +2,18 @@ package octavia
 
 import (
 	"database/sql"
-	"io"
-	"log/slog"
-	"strings"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/prometheus/client_golang/prometheus/testutil"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	octaviadb "github.com/vexxhost/openstack_database_exporter/internal/db/octavia"
+	"github.com/vexxhost/openstack_database_exporter/internal/testutil"
 )
 
 func TestLoadBalancerCollector_Collect(t *testing.T) {
-	tests := []struct {
-		name            string
-		setupMock       func(sqlmock.Sqlmock)
-		expectedMetrics string
-		expectError     bool
-	}{
+	tests := []testutil.CollectorTestCase{
 		{
-			name: "successful collection",
-			setupMock: func(mock sqlmock.Sqlmock) {
+			Name: "successful collection",
+			SetupMock: func(mock sqlmock.Sqlmock) {
 				// Mock load balancer query
 				lbRows := sqlmock.NewRows([]string{
 					"id", "project_id", "name", "provisioning_status",
@@ -38,7 +28,7 @@ func TestLoadBalancerCollector_Collect(t *testing.T) {
 
 				mock.ExpectQuery(octaviadb.GetAllLoadBalancersWithVip).WillReturnRows(lbRows)
 			},
-			expectedMetrics: `# HELP openstack_loadbalancer_loadbalancer_status loadbalancer_status
+			ExpectedMetrics: `# HELP openstack_loadbalancer_loadbalancer_status loadbalancer_status
 # TYPE openstack_loadbalancer_loadbalancer_status gauge
 openstack_loadbalancer_loadbalancer_status{id="lb-1",name="test-lb",operating_status="ONLINE",project_id="project-1",provider="amphora",provisioning_status="ACTIVE",vip_address="192.168.1.100"} 0
 openstack_loadbalancer_loadbalancer_status{id="lb-2",name="test-lb-2",operating_status="OFFLINE",project_id="project-2",provider="ovn",provisioning_status="ERROR",vip_address="10.0.0.1"} 2
@@ -51,18 +41,18 @@ openstack_loadbalancer_up 1
 `,
 		},
 		{
-			name: "handles query errors gracefully",
-			setupMock: func(mock sqlmock.Sqlmock) {
+			Name: "handles query errors gracefully",
+			SetupMock: func(mock sqlmock.Sqlmock) {
 				mock.ExpectQuery(octaviadb.GetAllLoadBalancersWithVip).WillReturnError(sql.ErrConnDone)
 			},
-			expectedMetrics: `# HELP openstack_loadbalancer_up up
+			ExpectedMetrics: `# HELP openstack_loadbalancer_up up
 # TYPE openstack_loadbalancer_up gauge
 openstack_loadbalancer_up 0
 `,
 		},
 		{
-			name: "handles null values",
-			setupMock: func(mock sqlmock.Sqlmock) {
+			Name: "handles null values",
+			SetupMock: func(mock sqlmock.Sqlmock) {
 				// Mock load balancer query with nulls
 				lbRows := sqlmock.NewRows([]string{
 					"id", "project_id", "name", "provisioning_status",
@@ -74,7 +64,7 @@ openstack_loadbalancer_up 0
 
 				mock.ExpectQuery(octaviadb.GetAllLoadBalancersWithVip).WillReturnRows(lbRows)
 			},
-			expectedMetrics: `# HELP openstack_loadbalancer_loadbalancer_status loadbalancer_status
+			ExpectedMetrics: `# HELP openstack_loadbalancer_loadbalancer_status loadbalancer_status
 # TYPE openstack_loadbalancer_loadbalancer_status gauge
 openstack_loadbalancer_loadbalancer_status{id="lb-2",name="",operating_status="OFFLINE",project_id="",provider="",provisioning_status="ERROR",vip_address=""} 2
 # HELP openstack_loadbalancer_total_loadbalancers total_loadbalancers
@@ -87,25 +77,5 @@ openstack_loadbalancer_up 1
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			db, mock, err := sqlmock.New()
-			require.NoError(t, err)
-			defer db.Close()
-
-			tt.setupMock(mock)
-
-			logger := slog.New(slog.NewTextHandler(io.Discard, nil))
-			collector := NewLoadBalancerCollector(db, logger)
-
-			err = testutil.CollectAndCompare(collector, strings.NewReader(tt.expectedMetrics))
-			if tt.expectError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-			}
-
-			assert.NoError(t, mock.ExpectationsWereMet())
-		})
-	}
+	testutil.RunCollectorTests(t, tests, NewLoadBalancerCollector)
 }
