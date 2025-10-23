@@ -90,7 +90,7 @@ openstack_neutron_l3_agent_of_router{agent_admin_up="true",agent_alive="false",a
 					"ddbf087c-e38f-4a73-bcb3-c38f2a719a03",
 					"active",
 					"dev-os-ctrl-02",
-					0, // admin_state_up is false
+					0,
 					now,
 				)
 

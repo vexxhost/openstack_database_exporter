@@ -14,8 +14,7 @@ func TestLoadBalancerCollector_Collect(t *testing.T) {
 		{
 			Name: "successful collection",
 			SetupMock: func(mock sqlmock.Sqlmock) {
-				// Mock load balancer query
-				lbRows := sqlmock.NewRows([]string{
+				rows := sqlmock.NewRows([]string{
 					"id", "project_id", "name", "provisioning_status",
 					"operating_status", "provider", "vip_address",
 				}).AddRow(
@@ -23,7 +22,7 @@ func TestLoadBalancerCollector_Collect(t *testing.T) {
 					"ONLINE", "octavia", "203.0.113.50",
 				)
 
-				mock.ExpectQuery(octaviadb.GetAllLoadBalancersWithVip).WillReturnRows(lbRows)
+				mock.ExpectQuery(octaviadb.GetAllLoadBalancersWithVip).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_loadbalancer_loadbalancer_status loadbalancer_status
 # TYPE openstack_loadbalancer_loadbalancer_status gauge

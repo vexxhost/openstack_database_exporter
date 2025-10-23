@@ -71,7 +71,7 @@ func (c *PoolCollector) Collect(ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(
 			poolStatusDesc,
 			prometheus.GaugeValue,
-			statusToValue(pool.ProvisioningStatus, []string{
+			collector.StatusToValue(pool.ProvisioningStatus, []string{
 				"ACTIVE",
 				"DELETED",
 				"ERROR",

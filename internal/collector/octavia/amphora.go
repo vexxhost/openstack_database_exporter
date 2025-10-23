@@ -77,7 +77,7 @@ func (c *AmphoraCollector) Collect(ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(
 			amphoraStatusDesc,
 			prometheus.GaugeValue,
-			statusToValue(amphora.Status, []string{
+			collector.StatusToValue(amphora.Status, []string{
 				"BOOTING",
 				"ALLOCATED",
 				"READY",

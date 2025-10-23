@@ -80,7 +80,7 @@ func (c *LoadBalancerCollector) Collect(ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(
 			loadBalancerStatusDesc,
 			prometheus.GaugeValue,
-			statusToValue(lb.OperatingStatus, []string{
+			collector.StatusToValue(lb.OperatingStatus, []string{
 				"ONLINE",
 				"DRAINING",
 				"OFFLINE",
