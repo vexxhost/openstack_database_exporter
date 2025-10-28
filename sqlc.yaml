@@ -32,3 +32,11 @@ sql:
         package: "octavia"
         out: "internal/db/octavia"
         emit_exported_queries: true
+  - engine: "mysql"
+    schema: "sql/glance/schema.sql"
+    queries: "sql/glance/queries.sql"
+    gen:
+      go:
+        package: "glance"
+        out: "internal/db/glance"
+        emit_exported_queries: true
