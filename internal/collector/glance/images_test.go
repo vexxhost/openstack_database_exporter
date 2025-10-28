@@ -72,7 +72,7 @@ openstack_glance_up 1
 			Name: "handles null values gracefully",
 			SetupMock: func(mock sqlmock.Sqlmock) {
 				createdAt := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
-				
+
 				rows := sqlmock.NewRows([]string{
 					"id", "name", "size", "status", "owner", "visibility",
 					"disk_format", "container_format", "checksum", "created_at",
