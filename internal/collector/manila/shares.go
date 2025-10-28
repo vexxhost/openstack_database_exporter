@@ -16,7 +16,7 @@ const Subsystem = "sharev2"
 var (
 	// Known share statuses from the original openstack-exporter
 	shareStatuses = []string{
-		"available", "creating", "deleting", "error", "error_deleting", 
+		"available", "creating", "deleting", "error", "error_deleting",
 		"extending", "inactive", "managing", "migrating", "migration_error",
 		"restoring", "reverting", "reverting_error", "reverting_to_snapshot",
 		"shrinking", "shrinking_error", "soft_deleting", "unmanaging", "updating",
@@ -178,13 +178,13 @@ func (c *SharesCollector) Collect(ch chan<- prometheus.Metric) {
 		if status != "" {
 			statusValue = 1.0
 		}
-		
+
 		// Convert size to string properly
 		sizeStr := "0"
 		if share.Size.Valid {
 			sizeStr = fmt.Sprintf("%d", share.Size.Int32)
 		}
-		
+
 		ch <- prometheus.MustNewConstMetric(
 			shareStatusDesc,
 			prometheus.GaugeValue,
