@@ -121,7 +121,7 @@ func (c *IdentityCollector) Collect(ch chan<- prometheus.Metric) {
 	// Collect domain metrics
 	c.collectDomainMetrics(ctx, queries, ch)
 
-	// Collect project metrics  
+	// Collect project metrics
 	c.collectProjectMetrics(ctx, queries, ch)
 
 	// Collect group metrics
