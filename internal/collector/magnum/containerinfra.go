@@ -17,7 +17,7 @@ var (
 	// Known cluster statuses from the original openstack-exporter
 	clusterStatuses = []string{
 		"CREATE_COMPLETE",
-		"CREATE_FAILED", 
+		"CREATE_FAILED",
 		"CREATE_IN_PROGRESS",
 		"UPDATE_IN_PROGRESS",
 		"UPDATE_FAILED",
@@ -48,7 +48,7 @@ var (
 		"cluster_masters",
 		[]string{
 			"uuid",
-			"name", 
+			"name",
 			"stack_id",
 			"status",
 			"node_count",
@@ -63,7 +63,7 @@ var (
 		[]string{
 			"uuid",
 			"name",
-			"stack_id", 
+			"stack_id",
 			"status",
 			"master_count",
 			"project_id",
@@ -80,7 +80,7 @@ var (
 			"stack_id",
 			"status",
 			"node_count",
-			"master_count", 
+			"master_count",
 			"project_id",
 		},
 		nil,
@@ -149,7 +149,7 @@ func (c *ContainerInfraCollector) collectClusterMetrics(ctx context.Context, que
 		if cluster.Uuid.Valid {
 			uuid = cluster.Uuid.String
 		}
-		
+
 		name := ""
 		if cluster.Name.Valid {
 			name = cluster.Name.String
@@ -191,7 +191,7 @@ func (c *ContainerInfraCollector) collectClusterMetrics(ctx context.Context, que
 			projectID,
 		)
 
-		// cluster_nodes metric  
+		// cluster_nodes metric
 		ch <- prometheus.MustNewConstMetric(
 			clusterNodesDesc,
 			prometheus.GaugeValue,
