@@ -64,3 +64,11 @@ sql:
         package: "magnum"
         out: "internal/db/magnum"
         emit_exported_queries: true
+  - engine: "mysql"
+    schema: "sql/placement/schema.sql"
+    queries: "sql/placement/queries.sql"
+    gen:
+      go:
+        package: "placement"
+        out: "internal/db/placement"
+        emit_exported_queries: true
