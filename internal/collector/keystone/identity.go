@@ -5,26 +5,16 @@ import (
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/vexxhost/openstack_database_exporter/internal/collector"
-)
-
-var (
-	keystoneUpDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "up"),
-		"up",
-		nil,
-		nil,
-	)
 )
 
 type IdentityCollector struct {
-	db               *sql.DB
-	logger           *slog.Logger
-	domainsCollector *DomainsCollector
+	db                *sql.DB
+	logger            *slog.Logger
+	domainsCollector  *DomainsCollector
 	projectsCollector *ProjectsCollector
-	groupsCollector  *GroupsCollector
-	regionsCollector *RegionsCollector
-	usersCollector   *UsersCollector
+	groupsCollector   *GroupsCollector
+	regionsCollector  *RegionsCollector
+	usersCollector    *UsersCollector
 }
 
 func NewIdentityCollector(db *sql.DB, logger *slog.Logger) *IdentityCollector {
@@ -40,7 +30,6 @@ func NewIdentityCollector(db *sql.DB, logger *slog.Logger) *IdentityCollector {
 }
 
 func (c *IdentityCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- keystoneUpDesc
 	c.domainsCollector.Describe(ch)
 	c.projectsCollector.Describe(ch)
 	c.groupsCollector.Describe(ch)
@@ -49,13 +38,6 @@ func (c *IdentityCollector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (c *IdentityCollector) Collect(ch chan<- prometheus.Metric) {
-	// Set up metric = 1 (service is up)
-	ch <- prometheus.MustNewConstMetric(
-		keystoneUpDesc,
-		prometheus.GaugeValue,
-		1,
-	)
-
 	// Collect metrics from all sub-collectors
 	c.domainsCollector.Collect(ch)
 	c.projectsCollector.Collect(ch)

@@ -29,6 +29,9 @@ func TestGroupsCollector(t *testing.T) {
 			ExpectedMetrics: `# HELP openstack_identity_groups groups
 # TYPE openstack_identity_groups gauge
 openstack_identity_groups 2
+# HELP openstack_identity_up up
+# TYPE openstack_identity_up gauge
+openstack_identity_up 1
 `,
 		},
 		{
@@ -43,6 +46,9 @@ openstack_identity_groups 2
 			ExpectedMetrics: `# HELP openstack_identity_groups groups
 # TYPE openstack_identity_groups gauge
 openstack_identity_groups 0
+# HELP openstack_identity_up up
+# TYPE openstack_identity_up gauge
+openstack_identity_up 1
 `,
 		},
 		{
@@ -50,7 +56,10 @@ openstack_identity_groups 0
 			SetupMock: func(mock sqlmock.Sqlmock) {
 				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetGroupMetrics)).WillReturnError(sql.ErrConnDone)
 			},
-			ExpectedMetrics: ``,
+			ExpectedMetrics: `# HELP openstack_identity_up up
+# TYPE openstack_identity_up gauge
+openstack_identity_up 0
+`,
 		},
 	}
 

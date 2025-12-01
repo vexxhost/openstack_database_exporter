@@ -36,6 +36,9 @@ openstack_identity_project_info{description="Demo Project",domain_id="default",e
 # HELP openstack_identity_projects projects
 # TYPE openstack_identity_projects gauge
 openstack_identity_projects 3
+# HELP openstack_identity_up up
+# TYPE openstack_identity_up gauge
+openstack_identity_up 1
 `,
 		},
 		{
@@ -50,6 +53,9 @@ openstack_identity_projects 3
 			ExpectedMetrics: `# HELP openstack_identity_projects projects
 # TYPE openstack_identity_projects gauge
 openstack_identity_projects 0
+# HELP openstack_identity_up up
+# TYPE openstack_identity_up gauge
+openstack_identity_up 1
 `,
 		},
 		{
@@ -69,6 +75,9 @@ openstack_identity_project_info{description="Disabled project",domain_id="defaul
 # HELP openstack_identity_projects projects
 # TYPE openstack_identity_projects gauge
 openstack_identity_projects 1
+# HELP openstack_identity_up up
+# TYPE openstack_identity_up gauge
+openstack_identity_up 1
 `,
 		},
 		{
@@ -88,6 +97,9 @@ openstack_identity_project_info{description="Project description",domain_id="def
 # HELP openstack_identity_projects projects
 # TYPE openstack_identity_projects gauge
 openstack_identity_projects 1
+# HELP openstack_identity_up up
+# TYPE openstack_identity_up gauge
+openstack_identity_up 1
 `,
 		},
 		{
@@ -95,7 +107,10 @@ openstack_identity_projects 1
 			SetupMock: func(mock sqlmock.Sqlmock) {
 				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetProjectMetrics)).WillReturnError(sql.ErrConnDone)
 			},
-			ExpectedMetrics: ``,
+			ExpectedMetrics: `# HELP openstack_identity_up up
+# TYPE openstack_identity_up gauge
+openstack_identity_up 0
+`,
 		},
 	}
 

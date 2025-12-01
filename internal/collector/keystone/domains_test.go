@@ -30,6 +30,9 @@ openstack_identity_domain_info{description="Owns users and tenants (i.e. project
 # HELP openstack_identity_domains domains
 # TYPE openstack_identity_domains gauge
 openstack_identity_domains 1
+# HELP openstack_identity_up up
+# TYPE openstack_identity_up gauge
+openstack_identity_up 1
 `,
 		},
 		{
@@ -44,6 +47,9 @@ openstack_identity_domains 1
 			ExpectedMetrics: `# HELP openstack_identity_domains domains
 # TYPE openstack_identity_domains gauge
 openstack_identity_domains 0
+# HELP openstack_identity_up up
+# TYPE openstack_identity_up gauge
+openstack_identity_up 1
 `,
 		},
 		{
@@ -63,6 +69,9 @@ openstack_identity_domain_info{description="A disabled domain",enabled="false",i
 # HELP openstack_identity_domains domains
 # TYPE openstack_identity_domains gauge
 openstack_identity_domains 1
+# HELP openstack_identity_up up
+# TYPE openstack_identity_up gauge
+openstack_identity_up 1
 `,
 		},
 		{
@@ -82,6 +91,9 @@ openstack_identity_domain_info{description="Domain description",enabled="false",
 # HELP openstack_identity_domains domains
 # TYPE openstack_identity_domains gauge
 openstack_identity_domains 1
+# HELP openstack_identity_up up
+# TYPE openstack_identity_up gauge
+openstack_identity_up 1
 `,
 		},
 		{
@@ -89,7 +101,10 @@ openstack_identity_domains 1
 			SetupMock: func(mock sqlmock.Sqlmock) {
 				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetDomainMetrics)).WillReturnError(sql.ErrConnDone)
 			},
-			ExpectedMetrics: ``,
+			ExpectedMetrics: `# HELP openstack_identity_up up
+# TYPE openstack_identity_up gauge
+openstack_identity_up 0
+`,
 		},
 	}
 

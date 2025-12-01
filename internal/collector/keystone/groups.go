@@ -11,6 +11,13 @@ import (
 )
 
 var (
+	groupsUpDesc = prometheus.NewDesc(
+		prometheus.BuildFQName(collector.Namespace, Subsystem, "up"),
+		"up",
+		nil,
+		nil,
+	)
+
 	groupsCountDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(collector.Namespace, Subsystem, "groups"),
 		"groups",
@@ -20,31 +27,34 @@ var (
 )
 
 type GroupsCollector struct {
-	db     *sql.DB
-	logger *slog.Logger
+	db      *sql.DB
+	queries *keystonedb.Queries
+	logger  *slog.Logger
 }
 
 func NewGroupsCollector(db *sql.DB, logger *slog.Logger) *GroupsCollector {
 	return &GroupsCollector{
-		db:     db,
-		logger: logger,
+		db:      db,
+		queries: keystonedb.New(db),
+		logger: logger.With(
+			"namespace", collector.Namespace,
+			"subsystem", Subsystem,
+			"collector", "groups",
+		),
 	}
 }
 
 func (c *GroupsCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- groupsUpDesc
 	ch <- groupsCountDesc
 }
 
 func (c *GroupsCollector) Collect(ch chan<- prometheus.Metric) {
 	ctx := context.Background()
-	queries := keystonedb.New(c.db)
 
-	c.collectGroupMetrics(ctx, queries, ch)
-}
-
-func (c *GroupsCollector) collectGroupMetrics(ctx context.Context, queries *keystonedb.Queries, ch chan<- prometheus.Metric) {
-	groups, err := queries.GetGroupMetrics(ctx)
+	groups, err := c.queries.GetGroupMetrics(ctx)
 	if err != nil {
+		ch <- prometheus.MustNewConstMetric(groupsUpDesc, prometheus.GaugeValue, 0)
 		c.logger.Error("Failed to get group metrics", "error", err)
 		return
 	}
@@ -55,4 +65,6 @@ func (c *GroupsCollector) collectGroupMetrics(ctx context.Context, queries *keys
 		prometheus.GaugeValue,
 		float64(len(groups)),
 	)
+
+	ch <- prometheus.MustNewConstMetric(groupsUpDesc, prometheus.GaugeValue, 1)
 }

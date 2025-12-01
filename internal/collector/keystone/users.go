@@ -11,6 +11,13 @@ import (
 )
 
 var (
+	usersUpDesc = prometheus.NewDesc(
+		prometheus.BuildFQName(collector.Namespace, Subsystem, "up"),
+		"up",
+		nil,
+		nil,
+	)
+
 	usersCountDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(collector.Namespace, Subsystem, "users"),
 		"users",
@@ -20,31 +27,34 @@ var (
 )
 
 type UsersCollector struct {
-	db     *sql.DB
-	logger *slog.Logger
+	db      *sql.DB
+	queries *keystonedb.Queries
+	logger  *slog.Logger
 }
 
 func NewUsersCollector(db *sql.DB, logger *slog.Logger) *UsersCollector {
 	return &UsersCollector{
-		db:     db,
-		logger: logger,
+		db:      db,
+		queries: keystonedb.New(db),
+		logger: logger.With(
+			"namespace", collector.Namespace,
+			"subsystem", Subsystem,
+			"collector", "users",
+		),
 	}
 }
 
 func (c *UsersCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- usersUpDesc
 	ch <- usersCountDesc
 }
 
 func (c *UsersCollector) Collect(ch chan<- prometheus.Metric) {
 	ctx := context.Background()
-	queries := keystonedb.New(c.db)
 
-	c.collectUserMetrics(ctx, queries, ch)
-}
-
-func (c *UsersCollector) collectUserMetrics(ctx context.Context, queries *keystonedb.Queries, ch chan<- prometheus.Metric) {
-	users, err := queries.GetUserMetrics(ctx)
+	users, err := c.queries.GetUserMetrics(ctx)
 	if err != nil {
+		ch <- prometheus.MustNewConstMetric(usersUpDesc, prometheus.GaugeValue, 0)
 		c.logger.Error("Failed to get user metrics", "error", err)
 		return
 	}
@@ -55,4 +65,6 @@ func (c *UsersCollector) collectUserMetrics(ctx context.Context, queries *keysto
 		prometheus.GaugeValue,
 		float64(len(users)),
 	)
+
+	ch <- prometheus.MustNewConstMetric(usersUpDesc, prometheus.GaugeValue, 1)
 }

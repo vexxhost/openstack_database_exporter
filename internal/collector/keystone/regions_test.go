@@ -27,6 +27,9 @@ func TestRegionsCollector(t *testing.T) {
 			ExpectedMetrics: `# HELP openstack_identity_regions regions
 # TYPE openstack_identity_regions gauge
 openstack_identity_regions 1
+# HELP openstack_identity_up up
+# TYPE openstack_identity_up gauge
+openstack_identity_up 1
 `,
 		},
 		{
@@ -41,6 +44,9 @@ openstack_identity_regions 1
 			ExpectedMetrics: `# HELP openstack_identity_regions regions
 # TYPE openstack_identity_regions gauge
 openstack_identity_regions 0
+# HELP openstack_identity_up up
+# TYPE openstack_identity_up gauge
+openstack_identity_up 1
 `,
 		},
 		{
@@ -48,7 +54,10 @@ openstack_identity_regions 0
 			SetupMock: func(mock sqlmock.Sqlmock) {
 				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetRegionMetrics)).WillReturnError(sql.ErrConnDone)
 			},
-			ExpectedMetrics: ``,
+			ExpectedMetrics: `# HELP openstack_identity_up up
+# TYPE openstack_identity_up gauge
+openstack_identity_up 0
+`,
 		},
 	}
 

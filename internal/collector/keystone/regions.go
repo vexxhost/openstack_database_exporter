@@ -11,6 +11,13 @@ import (
 )
 
 var (
+	regionsUpDesc = prometheus.NewDesc(
+		prometheus.BuildFQName(collector.Namespace, Subsystem, "up"),
+		"up",
+		nil,
+		nil,
+	)
+
 	regionsCountDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(collector.Namespace, Subsystem, "regions"),
 		"regions",
@@ -20,31 +27,34 @@ var (
 )
 
 type RegionsCollector struct {
-	db     *sql.DB
-	logger *slog.Logger
+	db      *sql.DB
+	queries *keystonedb.Queries
+	logger  *slog.Logger
 }
 
 func NewRegionsCollector(db *sql.DB, logger *slog.Logger) *RegionsCollector {
 	return &RegionsCollector{
-		db:     db,
-		logger: logger,
+		db:      db,
+		queries: keystonedb.New(db),
+		logger: logger.With(
+			"namespace", collector.Namespace,
+			"subsystem", Subsystem,
+			"collector", "regions",
+		),
 	}
 }
 
 func (c *RegionsCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- regionsUpDesc
 	ch <- regionsCountDesc
 }
 
 func (c *RegionsCollector) Collect(ch chan<- prometheus.Metric) {
 	ctx := context.Background()
-	queries := keystonedb.New(c.db)
 
-	c.collectRegionMetrics(ctx, queries, ch)
-}
-
-func (c *RegionsCollector) collectRegionMetrics(ctx context.Context, queries *keystonedb.Queries, ch chan<- prometheus.Metric) {
-	regions, err := queries.GetRegionMetrics(ctx)
+	regions, err := c.queries.GetRegionMetrics(ctx)
 	if err != nil {
+		ch <- prometheus.MustNewConstMetric(regionsUpDesc, prometheus.GaugeValue, 0)
 		c.logger.Error("Failed to get region metrics", "error", err)
 		return
 	}
@@ -55,4 +65,6 @@ func (c *RegionsCollector) collectRegionMetrics(ctx context.Context, queries *ke
 		prometheus.GaugeValue,
 		float64(len(regions)),
 	)
+
+	ch <- prometheus.MustNewConstMetric(regionsUpDesc, prometheus.GaugeValue, 1)
 }

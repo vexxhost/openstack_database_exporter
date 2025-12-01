@@ -11,6 +11,13 @@ import (
 )
 
 var (
+	domainsUpDesc = prometheus.NewDesc(
+		prometheus.BuildFQName(collector.Namespace, Subsystem, "up"),
+		"up",
+		nil,
+		nil,
+	)
+
 	domainsCountDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(collector.Namespace, Subsystem, "domains"),
 		"domains",
@@ -32,32 +39,35 @@ var (
 )
 
 type DomainsCollector struct {
-	db     *sql.DB
-	logger *slog.Logger
+	db      *sql.DB
+	queries *keystonedb.Queries
+	logger  *slog.Logger
 }
 
 func NewDomainsCollector(db *sql.DB, logger *slog.Logger) *DomainsCollector {
 	return &DomainsCollector{
-		db:     db,
-		logger: logger,
+		db:      db,
+		queries: keystonedb.New(db),
+		logger: logger.With(
+			"namespace", collector.Namespace,
+			"subsystem", Subsystem,
+			"collector", "domains",
+		),
 	}
 }
 
 func (c *DomainsCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- domainsUpDesc
 	ch <- domainsCountDesc
 	ch <- domainsInfoDesc
 }
 
 func (c *DomainsCollector) Collect(ch chan<- prometheus.Metric) {
 	ctx := context.Background()
-	queries := keystonedb.New(c.db)
 
-	c.collectDomainMetrics(ctx, queries, ch)
-}
-
-func (c *DomainsCollector) collectDomainMetrics(ctx context.Context, queries *keystonedb.Queries, ch chan<- prometheus.Metric) {
-	domains, err := queries.GetDomainMetrics(ctx)
+	domains, err := c.queries.GetDomainMetrics(ctx)
 	if err != nil {
+		ch <- prometheus.MustNewConstMetric(domainsUpDesc, prometheus.GaugeValue, 0)
 		c.logger.Error("Failed to get domain metrics", "error", err)
 		return
 	}
@@ -86,4 +96,6 @@ func (c *DomainsCollector) collectDomainMetrics(ctx context.Context, queries *ke
 			domain.Name,
 		)
 	}
+
+	ch <- prometheus.MustNewConstMetric(domainsUpDesc, prometheus.GaugeValue, 1)
 }

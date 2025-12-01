@@ -11,6 +11,13 @@ import (
 )
 
 var (
+	projectsUpDesc = prometheus.NewDesc(
+		prometheus.BuildFQName(collector.Namespace, Subsystem, "up"),
+		"up",
+		nil,
+		nil,
+	)
+
 	projectsCountDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(collector.Namespace, Subsystem, "projects"),
 		"projects",
@@ -36,32 +43,35 @@ var (
 )
 
 type ProjectsCollector struct {
-	db     *sql.DB
-	logger *slog.Logger
+	db      *sql.DB
+	queries *keystonedb.Queries
+	logger  *slog.Logger
 }
 
 func NewProjectsCollector(db *sql.DB, logger *slog.Logger) *ProjectsCollector {
 	return &ProjectsCollector{
-		db:     db,
-		logger: logger,
+		db:      db,
+		queries: keystonedb.New(db),
+		logger: logger.With(
+			"namespace", collector.Namespace,
+			"subsystem", Subsystem,
+			"collector", "projects",
+		),
 	}
 }
 
 func (c *ProjectsCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- projectsUpDesc
 	ch <- projectsCountDesc
 	ch <- projectsInfoDesc
 }
 
 func (c *ProjectsCollector) Collect(ch chan<- prometheus.Metric) {
 	ctx := context.Background()
-	queries := keystonedb.New(c.db)
 
-	c.collectProjectMetrics(ctx, queries, ch)
-}
-
-func (c *ProjectsCollector) collectProjectMetrics(ctx context.Context, queries *keystonedb.Queries, ch chan<- prometheus.Metric) {
-	projects, err := queries.GetProjectMetrics(ctx)
+	projects, err := c.queries.GetProjectMetrics(ctx)
 	if err != nil {
+		ch <- prometheus.MustNewConstMetric(projectsUpDesc, prometheus.GaugeValue, 0)
 		c.logger.Error("Failed to get project metrics", "error", err)
 		return
 	}
@@ -106,4 +116,6 @@ func (c *ProjectsCollector) collectProjectMetrics(ctx context.Context, queries *
 			tags,
 		)
 	}
+
+	ch <- prometheus.MustNewConstMetric(projectsUpDesc, prometheus.GaugeValue, 1)
 }
