@@ -12,6 +12,13 @@ import (
 )
 
 var (
+	clustersUpDesc = prometheus.NewDesc(
+		prometheus.BuildFQName(collector.Namespace, Subsystem, "up"),
+		"up",
+		nil,
+		nil,
+	)
+
 	// Known cluster statuses from the original openstack-exporter
 	knownClusterStatuses = []string{
 		"CREATE_COMPLETE",
@@ -58,32 +65,35 @@ var (
 )
 
 type ClustersCollector struct {
-	db     *sql.DB
-	logger *slog.Logger
+	db      *sql.DB
+	queries *magnumdb.Queries
+	logger  *slog.Logger
 }
 
 func NewClustersCollector(db *sql.DB, logger *slog.Logger) *ClustersCollector {
 	return &ClustersCollector{
-		db:     db,
-		logger: logger,
+		db:      db,
+		queries: magnumdb.New(db),
+		logger: logger.With(
+			"namespace", collector.Namespace,
+			"subsystem", Subsystem,
+			"collector", "clusters",
+		),
 	}
 }
 
 func (c *ClustersCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- clustersUpDesc
 	ch <- clustersStatusDesc
 	ch <- clustersCountDesc
 }
 
 func (c *ClustersCollector) Collect(ch chan<- prometheus.Metric) {
 	ctx := context.Background()
-	queries := magnumdb.New(c.db)
 
-	c.collectClusterMetrics(ctx, queries, ch)
-}
-
-func (c *ClustersCollector) collectClusterMetrics(ctx context.Context, queries *magnumdb.Queries, ch chan<- prometheus.Metric) {
-	clusters, err := queries.GetClusterMetrics(ctx)
+	clusters, err := c.queries.GetClusterMetrics(ctx)
 	if err != nil {
+		ch <- prometheus.MustNewConstMetric(clustersUpDesc, prometheus.GaugeValue, 0)
 		c.logger.Error("Failed to get cluster metrics", "error", err)
 		return
 	}
@@ -145,6 +155,8 @@ func (c *ClustersCollector) collectClusterMetrics(ctx context.Context, queries *
 			projectID,
 		)
 	}
+
+	ch <- prometheus.MustNewConstMetric(clustersUpDesc, prometheus.GaugeValue, 1)
 }
 
 func mapClusterStatusValue(status string) int {

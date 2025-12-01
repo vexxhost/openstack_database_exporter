@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/prometheus/client_golang/prometheus"
 	magnumdb "github.com/vexxhost/openstack_database_exporter/internal/db/magnum"
 	"github.com/vexxhost/openstack_database_exporter/internal/testutil"
 )
@@ -30,6 +31,9 @@ openstack_container_infra_cluster_status{master_count="1",name="k8s",node_count=
 # HELP openstack_container_infra_total_clusters total_clusters
 # TYPE openstack_container_infra_total_clusters gauge
 openstack_container_infra_total_clusters 1
+# HELP openstack_container_infra_up up
+# TYPE openstack_container_infra_up gauge
+openstack_container_infra_up 1
 `,
 		},
 		{
@@ -55,6 +59,9 @@ openstack_container_infra_cluster_status{master_count="2",name="test-cluster-3",
 # HELP openstack_container_infra_total_clusters total_clusters
 # TYPE openstack_container_infra_total_clusters gauge
 openstack_container_infra_total_clusters 3
+# HELP openstack_container_infra_up up
+# TYPE openstack_container_infra_up gauge
+openstack_container_infra_up 1
 `,
 		},
 		{
@@ -69,6 +76,9 @@ openstack_container_infra_total_clusters 3
 			ExpectedMetrics: `# HELP openstack_container_infra_total_clusters total_clusters
 # TYPE openstack_container_infra_total_clusters gauge
 openstack_container_infra_total_clusters 0
+# HELP openstack_container_infra_up up
+# TYPE openstack_container_infra_up gauge
+openstack_container_infra_up 1
 `,
 		},
 		{
@@ -88,6 +98,9 @@ openstack_container_infra_cluster_status{master_count="0",name="",node_count="0"
 # HELP openstack_container_infra_total_clusters total_clusters
 # TYPE openstack_container_infra_total_clusters gauge
 openstack_container_infra_total_clusters 1
+# HELP openstack_container_infra_up up
+# TYPE openstack_container_infra_up gauge
+openstack_container_infra_up 1
 `,
 		},
 		{
@@ -95,11 +108,14 @@ openstack_container_infra_total_clusters 1
 			SetupMock: func(mock sqlmock.Sqlmock) {
 				mock.ExpectQuery(regexp.QuoteMeta(magnumdb.GetClusterMetrics)).WillReturnError(sql.ErrConnDone)
 			},
-			ExpectedMetrics: ``,
+			ExpectedMetrics: `# HELP openstack_container_infra_up up
+# TYPE openstack_container_infra_up gauge
+openstack_container_infra_up 0
+`,
 		},
 	}
 
-	testutil.RunCollectorTests(t, tests, func(db *sql.DB, logger *slog.Logger) *ClustersCollector {
+	testutil.RunCollectorTests(t, tests, func(db *sql.DB, logger *slog.Logger) prometheus.Collector {
 		return NewClustersCollector(db, logger)
 	})
 }

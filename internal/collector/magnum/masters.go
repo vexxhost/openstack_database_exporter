@@ -12,6 +12,13 @@ import (
 )
 
 var (
+	mastersUpDesc = prometheus.NewDesc(
+		prometheus.BuildFQName(collector.Namespace, Subsystem, "up"),
+		"up",
+		nil,
+		nil,
+	)
+
 	clusterMastersCountDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(collector.Namespace, Subsystem, "cluster_masters"),
 		"cluster_masters",
@@ -28,31 +35,34 @@ var (
 )
 
 type MastersCollector struct {
-	db     *sql.DB
-	logger *slog.Logger
+	db      *sql.DB
+	queries *magnumdb.Queries
+	logger  *slog.Logger
 }
 
 func NewMastersCollector(db *sql.DB, logger *slog.Logger) *MastersCollector {
 	return &MastersCollector{
-		db:     db,
-		logger: logger,
+		db:      db,
+		queries: magnumdb.New(db),
+		logger: logger.With(
+			"namespace", collector.Namespace,
+			"subsystem", Subsystem,
+			"collector", "masters",
+		),
 	}
 }
 
 func (c *MastersCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- mastersUpDesc
 	ch <- clusterMastersCountDesc
 }
 
 func (c *MastersCollector) Collect(ch chan<- prometheus.Metric) {
 	ctx := context.Background()
-	queries := magnumdb.New(c.db)
 
-	c.collectMasterMetrics(ctx, queries, ch)
-}
-
-func (c *MastersCollector) collectMasterMetrics(ctx context.Context, queries *magnumdb.Queries, ch chan<- prometheus.Metric) {
-	clusters, err := queries.GetClusterMetrics(ctx)
+	clusters, err := c.queries.GetClusterMetrics(ctx)
 	if err != nil {
+		ch <- prometheus.MustNewConstMetric(mastersUpDesc, prometheus.GaugeValue, 0)
 		c.logger.Error("Failed to get cluster metrics for masters", "error", err)
 		return
 	}
@@ -104,4 +114,6 @@ func (c *MastersCollector) collectMasterMetrics(ctx context.Context, queries *ma
 			projectID,
 		)
 	}
+
+	ch <- prometheus.MustNewConstMetric(mastersUpDesc, prometheus.GaugeValue, 1)
 }
