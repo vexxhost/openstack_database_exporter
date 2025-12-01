@@ -87,7 +87,9 @@ func NewSharesCollector(db *sql.DB, logger *slog.Logger) *SharesCollector {
 		db:      db,
 		queries: maniladb.New(db),
 		logger: logger.With(
-			"component", "manila_shares_collector",
+			"namespace", collector.Namespace,
+			"subsystem", Subsystem,
+			"collector", "shares",
 		),
 	}
 }
