@@ -71,7 +71,9 @@ func NewResourcesCollector(db *sql.DB, logger *slog.Logger) *ResourcesCollector 
 		db:      db,
 		queries: placementdb.New(db),
 		logger: logger.With(
-			"component", "placement_resources_collector",
+			"namespace", collector.Namespace,
+			"subsystem", Subsystem,
+			"collector", "resources",
 		),
 	}
 }
