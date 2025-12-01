@@ -19,13 +19,13 @@ type IdentityCollector struct {
 
 func NewIdentityCollector(db *sql.DB, logger *slog.Logger) *IdentityCollector {
 	return &IdentityCollector{
-		db:               db,
-		logger:           logger,
-		domainsCollector: NewDomainsCollector(db, logger),
+		db:                db,
+		logger:            logger,
+		domainsCollector:  NewDomainsCollector(db, logger),
 		projectsCollector: NewProjectsCollector(db, logger),
-		groupsCollector:  NewGroupsCollector(db, logger),
-		regionsCollector: NewRegionsCollector(db, logger),
-		usersCollector:   NewUsersCollector(db, logger),
+		groupsCollector:   NewGroupsCollector(db, logger),
+		regionsCollector:  NewRegionsCollector(db, logger),
+		usersCollector:    NewUsersCollector(db, logger),
 	}
 }
 
