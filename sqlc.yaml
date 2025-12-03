@@ -40,3 +40,11 @@ sql:
         package: "glance"
         out: "internal/db/glance"
         emit_exported_queries: true
+  - engine: "mysql"
+    schema: "sql/manila/schema.sql"
+    queries: "sql/manila/queries.sql"
+    gen:
+      go:
+        package: "manila"
+        out: "internal/db/manila"
+        emit_exported_queries: true
