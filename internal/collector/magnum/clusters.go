@@ -12,13 +12,6 @@ import (
 )
 
 var (
-	clustersUpDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "up"),
-		"up",
-		nil,
-		nil,
-	)
-
 	// Known cluster statuses from the original openstack-exporter
 	knownClusterStatuses = []string{
 		"CREATE_COMPLETE",
@@ -83,19 +76,17 @@ func NewClustersCollector(db *sql.DB, logger *slog.Logger) *ClustersCollector {
 }
 
 func (c *ClustersCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- clustersUpDesc
 	ch <- clustersStatusDesc
 	ch <- clustersCountDesc
 }
 
-func (c *ClustersCollector) Collect(ch chan<- prometheus.Metric) {
+func (c *ClustersCollector) Collect(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
 
 	clusters, err := c.queries.GetClusterMetrics(ctx)
 	if err != nil {
-		ch <- prometheus.MustNewConstMetric(clustersUpDesc, prometheus.GaugeValue, 0)
 		c.logger.Error("Failed to get cluster metrics", "error", err)
-		return
+		return err
 	}
 
 	// total_clusters count
@@ -156,7 +147,7 @@ func (c *ClustersCollector) Collect(ch chan<- prometheus.Metric) {
 		)
 	}
 
-	ch <- prometheus.MustNewConstMetric(clustersUpDesc, prometheus.GaugeValue, 1)
+	return nil
 }
 
 func mapClusterStatusValue(status string) int {

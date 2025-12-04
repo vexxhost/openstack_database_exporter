@@ -12,13 +12,6 @@ import (
 )
 
 var (
-	mastersUpDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "up"),
-		"up",
-		nil,
-		nil,
-	)
-
 	clusterMastersCountDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(collector.Namespace, Subsystem, "cluster_masters"),
 		"cluster_masters",
@@ -53,18 +46,16 @@ func NewMastersCollector(db *sql.DB, logger *slog.Logger) *MastersCollector {
 }
 
 func (c *MastersCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- mastersUpDesc
 	ch <- clusterMastersCountDesc
 }
 
-func (c *MastersCollector) Collect(ch chan<- prometheus.Metric) {
+func (c *MastersCollector) Collect(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
 
 	clusters, err := c.queries.GetClusterMetrics(ctx)
 	if err != nil {
-		ch <- prometheus.MustNewConstMetric(mastersUpDesc, prometheus.GaugeValue, 0)
 		c.logger.Error("Failed to get cluster metrics for masters", "error", err)
-		return
+		return err
 	}
 
 	// Individual cluster master metrics
@@ -115,5 +106,5 @@ func (c *MastersCollector) Collect(ch chan<- prometheus.Metric) {
 		)
 	}
 
-	ch <- prometheus.MustNewConstMetric(mastersUpDesc, prometheus.GaugeValue, 1)
+	return nil
 }
