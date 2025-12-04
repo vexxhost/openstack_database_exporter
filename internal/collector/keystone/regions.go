@@ -11,13 +11,6 @@ import (
 )
 
 var (
-	regionsUpDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "up"),
-		"up",
-		nil,
-		nil,
-	)
-
 	regionsCountDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(collector.Namespace, Subsystem, "regions"),
 		"regions",
@@ -45,18 +38,16 @@ func NewRegionsCollector(db *sql.DB, logger *slog.Logger) *RegionsCollector {
 }
 
 func (c *RegionsCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- regionsUpDesc
 	ch <- regionsCountDesc
 }
 
-func (c *RegionsCollector) Collect(ch chan<- prometheus.Metric) {
+func (c *RegionsCollector) Collect(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
 
 	regions, err := c.queries.GetRegionMetrics(ctx)
 	if err != nil {
-		ch <- prometheus.MustNewConstMetric(regionsUpDesc, prometheus.GaugeValue, 0)
-		c.logger.Error("Failed to get region metrics", "error", err)
-		return
+		c.logger.Error("Failed to query regions", "error", err)
+		return err
 	}
 
 	// regions count
@@ -66,5 +57,5 @@ func (c *RegionsCollector) Collect(ch chan<- prometheus.Metric) {
 		float64(len(regions)),
 	)
 
-	ch <- prometheus.MustNewConstMetric(regionsUpDesc, prometheus.GaugeValue, 1)
+	return nil
 }

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/prometheus/client_golang/prometheus"
 	keystonedb "github.com/vexxhost/openstack_database_exporter/internal/db/keystone"
 	"github.com/vexxhost/openstack_database_exporter/internal/testutil"
 )
@@ -27,9 +28,6 @@ func TestRegionsCollector(t *testing.T) {
 			ExpectedMetrics: `# HELP openstack_identity_regions regions
 # TYPE openstack_identity_regions gauge
 openstack_identity_regions 1
-# HELP openstack_identity_up up
-# TYPE openstack_identity_up gauge
-openstack_identity_up 1
 `,
 		},
 		{
@@ -44,9 +42,6 @@ openstack_identity_up 1
 			ExpectedMetrics: `# HELP openstack_identity_regions regions
 # TYPE openstack_identity_regions gauge
 openstack_identity_regions 0
-# HELP openstack_identity_up up
-# TYPE openstack_identity_up gauge
-openstack_identity_up 1
 `,
 		},
 		{
@@ -54,14 +49,19 @@ openstack_identity_up 1
 			SetupMock: func(mock sqlmock.Sqlmock) {
 				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetRegionMetrics)).WillReturnError(sql.ErrConnDone)
 			},
-			ExpectedMetrics: `# HELP openstack_identity_up up
-# TYPE openstack_identity_up gauge
-openstack_identity_up 0
-`,
+			ExpectedMetrics: ``,
 		},
 	}
 
-	testutil.RunCollectorTests(t, tests, func(db *sql.DB, logger *slog.Logger) *RegionsCollector {
-		return NewRegionsCollector(db, logger)
+	testutil.RunCollectorTests(t, tests, func(db *sql.DB, logger *slog.Logger) prometheus.Collector {
+		return &testRegionsCollector{NewRegionsCollector(db, logger)}
 	})
+}
+
+type testRegionsCollector struct {
+	*RegionsCollector
+}
+
+func (t *testRegionsCollector) Collect(ch chan<- prometheus.Metric) {
+	_ = t.RegionsCollector.Collect(ch)
 }

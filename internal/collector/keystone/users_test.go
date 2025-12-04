@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/prometheus/client_golang/prometheus"
 	keystonedb "github.com/vexxhost/openstack_database_exporter/internal/db/keystone"
 	"github.com/vexxhost/openstack_database_exporter/internal/testutil"
 )
@@ -29,9 +30,6 @@ func TestUsersCollector(t *testing.T) {
 			ExpectedMetrics: `# HELP openstack_identity_users users
 # TYPE openstack_identity_users gauge
 openstack_identity_users 2
-# HELP openstack_identity_up up
-# TYPE openstack_identity_up gauge
-openstack_identity_up 1
 `,
 		},
 		{
@@ -46,9 +44,6 @@ openstack_identity_up 1
 			ExpectedMetrics: `# HELP openstack_identity_users users
 # TYPE openstack_identity_users gauge
 openstack_identity_users 0
-# HELP openstack_identity_up up
-# TYPE openstack_identity_up gauge
-openstack_identity_up 1
 `,
 		},
 		{
@@ -56,14 +51,19 @@ openstack_identity_up 1
 			SetupMock: func(mock sqlmock.Sqlmock) {
 				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetUserMetrics)).WillReturnError(sql.ErrConnDone)
 			},
-			ExpectedMetrics: `# HELP openstack_identity_up up
-# TYPE openstack_identity_up gauge
-openstack_identity_up 0
-`,
+			ExpectedMetrics: ``,
 		},
 	}
 
-	testutil.RunCollectorTests(t, tests, func(db *sql.DB, logger *slog.Logger) *UsersCollector {
-		return NewUsersCollector(db, logger)
+	testutil.RunCollectorTests(t, tests, func(db *sql.DB, logger *slog.Logger) prometheus.Collector {
+		return &testUsersCollector{NewUsersCollector(db, logger)}
 	})
+}
+
+type testUsersCollector struct {
+	*UsersCollector
+}
+
+func (t *testUsersCollector) Collect(ch chan<- prometheus.Metric) {
+	_ = t.UsersCollector.Collect(ch)
 }

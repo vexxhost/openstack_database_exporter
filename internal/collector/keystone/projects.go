@@ -11,13 +11,6 @@ import (
 )
 
 var (
-	projectsUpDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "up"),
-		"up",
-		nil,
-		nil,
-	)
-
 	projectsCountDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(collector.Namespace, Subsystem, "projects"),
 		"projects",
@@ -61,19 +54,17 @@ func NewProjectsCollector(db *sql.DB, logger *slog.Logger) *ProjectsCollector {
 }
 
 func (c *ProjectsCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- projectsUpDesc
 	ch <- projectsCountDesc
 	ch <- projectsInfoDesc
 }
 
-func (c *ProjectsCollector) Collect(ch chan<- prometheus.Metric) {
+func (c *ProjectsCollector) Collect(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
 
 	projects, err := c.queries.GetProjectMetrics(ctx)
 	if err != nil {
-		ch <- prometheus.MustNewConstMetric(projectsUpDesc, prometheus.GaugeValue, 0)
-		c.logger.Error("Failed to get project metrics", "error", err)
-		return
+		c.logger.Error("Failed to query projects", "error", err)
+		return err
 	}
 
 	// projects count
@@ -117,5 +108,5 @@ func (c *ProjectsCollector) Collect(ch chan<- prometheus.Metric) {
 		)
 	}
 
-	ch <- prometheus.MustNewConstMetric(projectsUpDesc, prometheus.GaugeValue, 1)
+	return nil
 }

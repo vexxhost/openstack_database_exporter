@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/prometheus/client_golang/prometheus"
 	keystonedb "github.com/vexxhost/openstack_database_exporter/internal/db/keystone"
 	"github.com/vexxhost/openstack_database_exporter/internal/testutil"
 )
@@ -30,9 +31,6 @@ openstack_identity_domain_info{description="Owns users and tenants (i.e. project
 # HELP openstack_identity_domains domains
 # TYPE openstack_identity_domains gauge
 openstack_identity_domains 1
-# HELP openstack_identity_up up
-# TYPE openstack_identity_up gauge
-openstack_identity_up 1
 `,
 		},
 		{
@@ -47,9 +45,6 @@ openstack_identity_up 1
 			ExpectedMetrics: `# HELP openstack_identity_domains domains
 # TYPE openstack_identity_domains gauge
 openstack_identity_domains 0
-# HELP openstack_identity_up up
-# TYPE openstack_identity_up gauge
-openstack_identity_up 1
 `,
 		},
 		{
@@ -69,9 +64,6 @@ openstack_identity_domain_info{description="A disabled domain",enabled="false",i
 # HELP openstack_identity_domains domains
 # TYPE openstack_identity_domains gauge
 openstack_identity_domains 1
-# HELP openstack_identity_up up
-# TYPE openstack_identity_up gauge
-openstack_identity_up 1
 `,
 		},
 		{
@@ -91,9 +83,6 @@ openstack_identity_domain_info{description="Domain description",enabled="false",
 # HELP openstack_identity_domains domains
 # TYPE openstack_identity_domains gauge
 openstack_identity_domains 1
-# HELP openstack_identity_up up
-# TYPE openstack_identity_up gauge
-openstack_identity_up 1
 `,
 		},
 		{
@@ -101,14 +90,19 @@ openstack_identity_up 1
 			SetupMock: func(mock sqlmock.Sqlmock) {
 				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetDomainMetrics)).WillReturnError(sql.ErrConnDone)
 			},
-			ExpectedMetrics: `# HELP openstack_identity_up up
-# TYPE openstack_identity_up gauge
-openstack_identity_up 0
-`,
+			ExpectedMetrics: ``,
 		},
 	}
 
-	testutil.RunCollectorTests(t, tests, func(db *sql.DB, logger *slog.Logger) *DomainsCollector {
-		return NewDomainsCollector(db, logger)
+	testutil.RunCollectorTests(t, tests, func(db *sql.DB, logger *slog.Logger) prometheus.Collector {
+		return &testDomainsCollector{NewDomainsCollector(db, logger)}
 	})
+}
+
+type testDomainsCollector struct {
+	*DomainsCollector
+}
+
+func (t *testDomainsCollector) Collect(ch chan<- prometheus.Metric) {
+	_ = t.DomainsCollector.Collect(ch)
 }

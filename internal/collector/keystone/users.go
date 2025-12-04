@@ -11,13 +11,6 @@ import (
 )
 
 var (
-	usersUpDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "up"),
-		"up",
-		nil,
-		nil,
-	)
-
 	usersCountDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(collector.Namespace, Subsystem, "users"),
 		"users",
@@ -45,18 +38,16 @@ func NewUsersCollector(db *sql.DB, logger *slog.Logger) *UsersCollector {
 }
 
 func (c *UsersCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- usersUpDesc
 	ch <- usersCountDesc
 }
 
-func (c *UsersCollector) Collect(ch chan<- prometheus.Metric) {
+func (c *UsersCollector) Collect(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
 
 	users, err := c.queries.GetUserMetrics(ctx)
 	if err != nil {
-		ch <- prometheus.MustNewConstMetric(usersUpDesc, prometheus.GaugeValue, 0)
-		c.logger.Error("Failed to get user metrics", "error", err)
-		return
+		c.logger.Error("Failed to query users", "error", err)
+		return err
 	}
 
 	// users count
@@ -66,5 +57,5 @@ func (c *UsersCollector) Collect(ch chan<- prometheus.Metric) {
 		float64(len(users)),
 	)
 
-	ch <- prometheus.MustNewConstMetric(usersUpDesc, prometheus.GaugeValue, 1)
+	return nil
 }

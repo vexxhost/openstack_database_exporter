@@ -11,13 +11,6 @@ import (
 )
 
 var (
-	domainsUpDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "up"),
-		"up",
-		nil,
-		nil,
-	)
-
 	domainsCountDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(collector.Namespace, Subsystem, "domains"),
 		"domains",
@@ -57,19 +50,17 @@ func NewDomainsCollector(db *sql.DB, logger *slog.Logger) *DomainsCollector {
 }
 
 func (c *DomainsCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- domainsUpDesc
 	ch <- domainsCountDesc
 	ch <- domainsInfoDesc
 }
 
-func (c *DomainsCollector) Collect(ch chan<- prometheus.Metric) {
+func (c *DomainsCollector) Collect(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
 
 	domains, err := c.queries.GetDomainMetrics(ctx)
 	if err != nil {
-		ch <- prometheus.MustNewConstMetric(domainsUpDesc, prometheus.GaugeValue, 0)
-		c.logger.Error("Failed to get domain metrics", "error", err)
-		return
+		c.logger.Error("Failed to query domains", "error", err)
+		return err
 	}
 
 	// domains count
@@ -97,5 +88,5 @@ func (c *DomainsCollector) Collect(ch chan<- prometheus.Metric) {
 		)
 	}
 
-	ch <- prometheus.MustNewConstMetric(domainsUpDesc, prometheus.GaugeValue, 1)
+	return nil
 }

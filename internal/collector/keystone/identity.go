@@ -5,6 +5,16 @@ import (
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/vexxhost/openstack_database_exporter/internal/collector"
+)
+
+var (
+	keystoneUpDesc = prometheus.NewDesc(
+		prometheus.BuildFQName(collector.Namespace, Subsystem, "up"),
+		"up",
+		nil,
+		nil,
+	)
 )
 
 type IdentityCollector struct {
@@ -30,6 +40,7 @@ func NewIdentityCollector(db *sql.DB, logger *slog.Logger) *IdentityCollector {
 }
 
 func (c *IdentityCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- keystoneUpDesc
 	c.domainsCollector.Describe(ch)
 	c.projectsCollector.Describe(ch)
 	c.groupsCollector.Describe(ch)
@@ -38,10 +49,34 @@ func (c *IdentityCollector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (c *IdentityCollector) Collect(ch chan<- prometheus.Metric) {
+	// Track if any sub-collector fails
+	var hasError bool
+
 	// Collect metrics from all sub-collectors
-	c.domainsCollector.Collect(ch)
-	c.projectsCollector.Collect(ch)
-	c.groupsCollector.Collect(ch)
-	c.regionsCollector.Collect(ch)
-	c.usersCollector.Collect(ch)
+	if err := c.domainsCollector.Collect(ch); err != nil {
+		hasError = true
+	}
+	if err := c.projectsCollector.Collect(ch); err != nil {
+		hasError = true
+	}
+	if err := c.groupsCollector.Collect(ch); err != nil {
+		hasError = true
+	}
+	if err := c.regionsCollector.Collect(ch); err != nil {
+		hasError = true
+	}
+	if err := c.usersCollector.Collect(ch); err != nil {
+		hasError = true
+	}
+
+	// Emit single up metric based on overall success/failure
+	upValue := float64(1)
+	if hasError {
+		upValue = 0
+	}
+	ch <- prometheus.MustNewConstMetric(
+		keystoneUpDesc,
+		prometheus.GaugeValue,
+		upValue,
+	)
 }

@@ -11,13 +11,6 @@ import (
 )
 
 var (
-	groupsUpDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "up"),
-		"up",
-		nil,
-		nil,
-	)
-
 	groupsCountDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(collector.Namespace, Subsystem, "groups"),
 		"groups",
@@ -45,18 +38,16 @@ func NewGroupsCollector(db *sql.DB, logger *slog.Logger) *GroupsCollector {
 }
 
 func (c *GroupsCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- groupsUpDesc
 	ch <- groupsCountDesc
 }
 
-func (c *GroupsCollector) Collect(ch chan<- prometheus.Metric) {
+func (c *GroupsCollector) Collect(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
 
 	groups, err := c.queries.GetGroupMetrics(ctx)
 	if err != nil {
-		ch <- prometheus.MustNewConstMetric(groupsUpDesc, prometheus.GaugeValue, 0)
-		c.logger.Error("Failed to get group metrics", "error", err)
-		return
+		c.logger.Error("Failed to query groups", "error", err)
+		return err
 	}
 
 	// groups count
@@ -66,5 +57,5 @@ func (c *GroupsCollector) Collect(ch chan<- prometheus.Metric) {
 		float64(len(groups)),
 	)
 
-	ch <- prometheus.MustNewConstMetric(groupsUpDesc, prometheus.GaugeValue, 1)
+	return nil
 }
