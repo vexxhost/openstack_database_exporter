@@ -48,3 +48,11 @@ sql:
         package: "manila"
         out: "internal/db/manila"
         emit_exported_queries: true
+  - engine: "mysql"
+    schema: "sql/keystone/schema.sql"
+    queries: "sql/keystone/queries.sql"
+    gen:
+      go:
+        package: "keystone"
+        out: "internal/db/keystone"
+        emit_exported_queries: true
