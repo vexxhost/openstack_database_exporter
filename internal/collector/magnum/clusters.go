@@ -7,7 +7,6 @@ import (
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/vexxhost/openstack_database_exporter/internal/collector"
 	magnumdb "github.com/vexxhost/openstack_database_exporter/internal/db/magnum"
 )
 
@@ -35,7 +34,7 @@ var (
 	}
 
 	clustersStatusDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "cluster_status"),
+		prometheus.BuildFQName(Namespace, Subsystem, "cluster_status"),
 		"cluster_status",
 		[]string{
 			"uuid",
@@ -50,7 +49,7 @@ var (
 	)
 
 	clustersCountDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "total_clusters"),
+		prometheus.BuildFQName(Namespace, Subsystem, "total_clusters"),
 		"total_clusters",
 		nil,
 		nil,
@@ -68,7 +67,7 @@ func NewClustersCollector(db *sql.DB, logger *slog.Logger) *ClustersCollector {
 		db:      db,
 		queries: magnumdb.New(db),
 		logger: logger.With(
-			"namespace", collector.Namespace,
+			"namespace", Namespace,
 			"subsystem", Subsystem,
 			"collector", "clusters",
 		),

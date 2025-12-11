@@ -6,20 +6,19 @@ import (
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/vexxhost/openstack_database_exporter/internal/collector"
 	keystonedb "github.com/vexxhost/openstack_database_exporter/internal/db/keystone"
 )
 
 var (
 	projectsCountDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "projects"),
+		prometheus.BuildFQName(Namespace, Subsystem, "projects"),
 		"projects",
 		nil,
 		nil,
 	)
 
 	projectsInfoDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "project_info"),
+		prometheus.BuildFQName(Namespace, Subsystem, "project_info"),
 		"project_info",
 		[]string{
 			"description",
@@ -46,7 +45,7 @@ func NewProjectsCollector(db *sql.DB, logger *slog.Logger) *ProjectsCollector {
 		db:      db,
 		queries: keystonedb.New(db),
 		logger: logger.With(
-			"namespace", collector.Namespace,
+			"namespace", Namespace,
 			"subsystem", Subsystem,
 			"collector", "projects",
 		),

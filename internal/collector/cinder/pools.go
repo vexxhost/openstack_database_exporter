@@ -5,13 +5,12 @@ import (
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/vexxhost/openstack_database_exporter/internal/collector"
 	cinderdb "github.com/vexxhost/openstack_database_exporter/internal/db/cinder"
 )
 
 var (
 	poolFreeGbDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "pool_capacity_free_gb"),
+		prometheus.BuildFQName(Namespace, Subsystem, "pool_capacity_free_gb"),
 		"pool_capacity_free_gb",
 		[]string{
 			"name",
@@ -22,7 +21,7 @@ var (
 	)
 
 	poolTotalGbDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "pool_capacity_total_gb"),
+		prometheus.BuildFQName(Namespace, Subsystem, "pool_capacity_total_gb"),
 		"pool_capacity_total_gb",
 		[]string{
 			"name",
@@ -44,7 +43,7 @@ func NewPoolsCollector(db *sql.DB, logger *slog.Logger) *PoolsCollector {
 		db:      db,
 		queries: cinderdb.New(db),
 		logger: logger.With(
-			"namespace", collector.Namespace,
+			"namespace", Namespace,
 			"subsystem", Subsystem,
 			"collector", "pools",
 		),

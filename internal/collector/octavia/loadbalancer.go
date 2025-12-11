@@ -6,13 +6,13 @@ import (
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/vexxhost/openstack_database_exporter/internal/collector"
 	octaviadb "github.com/vexxhost/openstack_database_exporter/internal/db/octavia"
+	"github.com/vexxhost/openstack_database_exporter/internal/util"
 )
 
 var (
 	loadBalancerStatusDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "loadbalancer_status"),
+		prometheus.BuildFQName(Namespace, Subsystem, "loadbalancer_status"),
 		"loadbalancer_status",
 		[]string{
 			"id",
@@ -27,14 +27,14 @@ var (
 	)
 
 	totalLoadBalancersDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "total_loadbalancers"),
+		prometheus.BuildFQName(Namespace, Subsystem, "total_loadbalancers"),
 		"total_loadbalancers",
 		nil,
 		nil,
 	)
 
 	upDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "up"),
+		prometheus.BuildFQName(Namespace, Subsystem, "up"),
 		"up",
 		nil,
 		nil,
@@ -52,7 +52,7 @@ func NewLoadBalancerCollector(db *sql.DB, logger *slog.Logger) *LoadBalancerColl
 		db:      db,
 		queries: octaviadb.New(db),
 		logger: logger.With(
-			"namespace", collector.Namespace,
+			"namespace", Namespace,
 			"subsystem", Subsystem,
 			"collector", "loadbalancer",
 		),
@@ -80,7 +80,7 @@ func (c *LoadBalancerCollector) Collect(ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(
 			loadBalancerStatusDesc,
 			prometheus.GaugeValue,
-			collector.StatusToValue(lb.OperatingStatus, []string{
+			util.StatusToValue(lb.OperatingStatus, []string{
 				"ONLINE",
 				"DRAINING",
 				"OFFLINE",

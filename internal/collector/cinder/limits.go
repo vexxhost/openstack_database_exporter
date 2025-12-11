@@ -6,7 +6,6 @@ import (
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/vexxhost/openstack_database_exporter/internal/collector"
 	cinderdb "github.com/vexxhost/openstack_database_exporter/internal/db/cinder"
 )
 
@@ -23,7 +22,7 @@ var FAKE_TENANTS = map[string]string{
 
 var (
 	limitsVolumeMaxGbDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "limits_volume_max_gb"),
+		prometheus.BuildFQName(Namespace, Subsystem, "limits_volume_max_gb"),
 		"limits_volume_max_gb",
 		[]string{
 			"tenant",
@@ -33,7 +32,7 @@ var (
 	)
 
 	limitsVolumeUsedGbDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "limits_volume_used_gb"),
+		prometheus.BuildFQName(Namespace, Subsystem, "limits_volume_used_gb"),
 		"limits_volume_used_gb",
 		[]string{
 			"tenant",
@@ -43,7 +42,7 @@ var (
 	)
 
 	limitsBackupMaxGbDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "limits_backup_max_gb"),
+		prometheus.BuildFQName(Namespace, Subsystem, "limits_backup_max_gb"),
 		"limits_backup_max_gb",
 		[]string{
 			"tenant",
@@ -53,7 +52,7 @@ var (
 	)
 
 	limitsBackupUsedGbDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "limits_backup_used_gb"),
+		prometheus.BuildFQName(Namespace, Subsystem, "limits_backup_used_gb"),
 		"limits_backup_used_gb",
 		[]string{
 			"tenant",
@@ -74,7 +73,7 @@ func NewLimitsCollector(db *sql.DB, logger *slog.Logger) *LimitsCollector {
 		db:      db,
 		queries: cinderdb.New(db),
 		logger: logger.With(
-			"namespace", collector.Namespace,
+			"namespace", Namespace,
 			"subsystem", Subsystem,
 			"collector", "limits",
 		),

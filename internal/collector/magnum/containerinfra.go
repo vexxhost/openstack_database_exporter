@@ -5,12 +5,11 @@ import (
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/vexxhost/openstack_database_exporter/internal/collector"
 )
 
 var (
 	containerInfraUpDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "up"),
+		prometheus.BuildFQName(Namespace, Subsystem, "up"),
 		"up",
 		nil,
 		nil,

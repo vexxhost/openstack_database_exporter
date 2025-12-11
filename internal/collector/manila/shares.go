@@ -7,7 +7,6 @@ import (
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/vexxhost/openstack_database_exporter/internal/collector"
 	maniladb "github.com/vexxhost/openstack_database_exporter/internal/db/manila"
 )
 
@@ -21,14 +20,14 @@ var (
 	}
 
 	manilaUpDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "up"),
+		prometheus.BuildFQName(Namespace, Subsystem, "up"),
 		"up",
 		nil,
 		nil,
 	)
 
 	shareGbDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "share_gb"),
+		prometheus.BuildFQName(Namespace, Subsystem, "share_gb"),
 		"share_gb",
 		[]string{
 			"availability_zone",
@@ -44,7 +43,7 @@ var (
 	)
 
 	shareStatusDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "share_status"),
+		prometheus.BuildFQName(Namespace, Subsystem, "share_status"),
 		"share_status",
 		[]string{
 			"id",
@@ -60,7 +59,7 @@ var (
 	)
 
 	shareStatusCounterDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "share_status_counter"),
+		prometheus.BuildFQName(Namespace, Subsystem, "share_status_counter"),
 		"share_status_counter",
 		[]string{
 			"status",
@@ -69,7 +68,7 @@ var (
 	)
 
 	sharesCounterDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "shares_counter"),
+		prometheus.BuildFQName(Namespace, Subsystem, "shares_counter"),
 		"shares_counter",
 		nil,
 		nil,
@@ -87,7 +86,7 @@ func NewSharesCollector(db *sql.DB, logger *slog.Logger) *SharesCollector {
 		db:      db,
 		queries: maniladb.New(db),
 		logger: logger.With(
-			"namespace", collector.Namespace,
+			"namespace", Namespace,
 			"subsystem", Subsystem,
 			"collector", "shares",
 		),

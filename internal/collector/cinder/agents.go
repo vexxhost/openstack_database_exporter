@@ -6,13 +6,12 @@ import (
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/vexxhost/openstack_database_exporter/internal/collector"
 	cinderdb "github.com/vexxhost/openstack_database_exporter/internal/db/cinder"
 )
 
 var (
 	agentStateDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "agent_state"),
+		prometheus.BuildFQName(Namespace, Subsystem, "agent_state"),
 		"agent_state",
 		[]string{
 			"uuid",
@@ -37,7 +36,7 @@ func NewAgentsCollector(db *sql.DB, logger *slog.Logger) *AgentsCollector {
 		db:      db,
 		queries: cinderdb.New(db),
 		logger: logger.With(
-			"namespace", collector.Namespace,
+			"namespace", Namespace,
 			"subsystem", Subsystem,
 			"collector", "agents",
 		),

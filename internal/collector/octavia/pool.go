@@ -6,13 +6,13 @@ import (
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/vexxhost/openstack_database_exporter/internal/collector"
 	octaviadb "github.com/vexxhost/openstack_database_exporter/internal/db/octavia"
+	"github.com/vexxhost/openstack_database_exporter/internal/util"
 )
 
 var (
 	poolStatusDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "pool_status"),
+		prometheus.BuildFQName(Namespace, Subsystem, "pool_status"),
 		"pool_status",
 		[]string{
 			"id",
@@ -28,7 +28,7 @@ var (
 	)
 
 	totalPoolsDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "total_pools"),
+		prometheus.BuildFQName(Namespace, Subsystem, "total_pools"),
 		"total_pools",
 		nil,
 		nil,
@@ -46,7 +46,7 @@ func NewPoolCollector(db *sql.DB, logger *slog.Logger) *PoolCollector {
 		db:      db,
 		queries: octaviadb.New(db),
 		logger: logger.With(
-			"namespace", collector.Namespace,
+			"namespace", Namespace,
 			"subsystem", Subsystem,
 			"collector", "pool",
 		),
@@ -71,7 +71,7 @@ func (c *PoolCollector) Collect(ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(
 			poolStatusDesc,
 			prometheus.GaugeValue,
-			collector.StatusToValue(pool.ProvisioningStatus, []string{
+			util.StatusToValue(pool.ProvisioningStatus, []string{
 				"ACTIVE",
 				"DELETED",
 				"ERROR",

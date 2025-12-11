@@ -6,20 +6,19 @@ import (
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/vexxhost/openstack_database_exporter/internal/collector"
 	glancedb "github.com/vexxhost/openstack_database_exporter/internal/db/glance"
 )
 
 var (
 	imagesUpDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "up"),
+		prometheus.BuildFQName(Namespace, Subsystem, "up"),
 		"up",
 		nil,
 		nil,
 	)
 
 	imagesBytesDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "image_bytes"),
+		prometheus.BuildFQName(Namespace, Subsystem, "image_bytes"),
 		"image_bytes",
 		[]string{
 			"id",
@@ -30,7 +29,7 @@ var (
 	)
 
 	imageCreatedAtDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "image_created_at"),
+		prometheus.BuildFQName(Namespace, Subsystem, "image_created_at"),
 		"image_created_at",
 		[]string{
 			"id",
@@ -44,7 +43,7 @@ var (
 	)
 
 	imagesDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "images"),
+		prometheus.BuildFQName(Namespace, Subsystem, "images"),
 		"images",
 		nil,
 		nil,
@@ -62,7 +61,7 @@ func NewImagesCollector(db *sql.DB, logger *slog.Logger) *ImagesCollector {
 		db:      db,
 		queries: glancedb.New(db),
 		logger: logger.With(
-			"namespace", collector.Namespace,
+			"namespace", Namespace,
 			"subsystem", Subsystem,
 			"collector", "images",
 		),

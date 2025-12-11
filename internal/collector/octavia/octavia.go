@@ -1,18 +1,33 @@
 package octavia
 
 import (
-	"database/sql"
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/vexxhost/openstack_database_exporter/internal/db"
 )
 
 const (
+	Namespace = "openstack"
 	Subsystem = "loadbalancer"
 )
 
-func RegisterCollectors(registry *prometheus.Registry, db *sql.DB, logger *slog.Logger) {
-	registry.MustRegister(NewAmphoraCollector(db, logger))
-	registry.MustRegister(NewLoadBalancerCollector(db, logger))
-	registry.MustRegister(NewPoolCollector(db, logger))
+func RegisterCollectors(registry *prometheus.Registry, databaseURL string, logger *slog.Logger) error {
+	if databaseURL == "" {
+		logger.Info("Collector not loaded", "service", "octavia", "reason", "database URL not configured")
+		return nil
+	}
+
+	conn, err := db.Connect(databaseURL)
+	if err != nil {
+		logger.Error("Failed to connect to database", "service", "octavia", "error", err)
+		return err
+	}
+
+	registry.MustRegister(NewAmphoraCollector(conn, logger))
+	registry.MustRegister(NewLoadBalancerCollector(conn, logger))
+	registry.MustRegister(NewPoolCollector(conn, logger))
+
+	logger.Info("Registered collectors", "service", "octavia")
+	return nil
 }

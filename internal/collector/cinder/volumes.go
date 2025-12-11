@@ -7,20 +7,20 @@ import (
 	"strconv"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/vexxhost/openstack_database_exporter/internal/collector"
 	cinderdb "github.com/vexxhost/openstack_database_exporter/internal/db/cinder"
+	"github.com/vexxhost/openstack_database_exporter/internal/util"
 )
 
 var (
 	volumesUpDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "up"),
+		prometheus.BuildFQName(Namespace, Subsystem, "up"),
 		"up",
 		nil,
 		nil,
 	)
 
 	volumeGbDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "volume_gb"),
+		prometheus.BuildFQName(Namespace, Subsystem, "volume_gb"),
 		"volume_gb",
 		[]string{
 			"id",
@@ -37,7 +37,7 @@ var (
 	)
 
 	volumeStatusDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "volume_status"),
+		prometheus.BuildFQName(Namespace, Subsystem, "volume_status"),
 		"volume_status",
 		[]string{
 			"id",
@@ -53,7 +53,7 @@ var (
 	)
 
 	volumeStatusCounterDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "volume_status_counter"),
+		prometheus.BuildFQName(Namespace, Subsystem, "volume_status_counter"),
 		"volume_status_counter",
 		[]string{
 			"status",
@@ -62,7 +62,7 @@ var (
 	)
 
 	volumesDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "volumes"),
+		prometheus.BuildFQName(Namespace, Subsystem, "volumes"),
 		"volumes",
 		nil,
 		nil,
@@ -80,7 +80,7 @@ func NewVolumesCollector(db *sql.DB, logger *slog.Logger) *VolumesCollector {
 		db:      db,
 		queries: cinderdb.New(db),
 		logger: logger.With(
-			"namespace", collector.Namespace,
+			"namespace", Namespace,
 			"subsystem", Subsystem,
 			"collector", "volumes",
 		),
@@ -150,7 +150,7 @@ func (c *VolumesCollector) Collect(ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(
 			volumeStatusDesc,
 			prometheus.GaugeValue,
-			collector.StatusToValue(volume.Status.String, []string{
+			util.StatusToValue(volume.Status.String, []string{
 				"creating",
 				"available",
 				"reserved",

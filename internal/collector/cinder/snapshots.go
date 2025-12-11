@@ -6,13 +6,12 @@ import (
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/vexxhost/openstack_database_exporter/internal/collector"
 	cinderdb "github.com/vexxhost/openstack_database_exporter/internal/db/cinder"
 )
 
 var (
 	snapshotsDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "snapshots"),
+		prometheus.BuildFQName(Namespace, Subsystem, "snapshots"),
 		"snapshots",
 		nil,
 		nil,
@@ -30,7 +29,7 @@ func NewSnapshotsCollector(db *sql.DB, logger *slog.Logger) *SnapshotsCollector 
 		db:      db,
 		queries: cinderdb.New(db),
 		logger: logger.With(
-			"namespace", collector.Namespace,
+			"namespace", Namespace,
 			"subsystem", Subsystem,
 			"collector", "snapshots",
 		),

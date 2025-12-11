@@ -1,14 +1,10 @@
 package main
 
 import (
-	"database/sql"
-	"log/slog"
 	"net/http"
 	"os"
 
 	"github.com/alecthomas/kingpin/v2"
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/promslog"
 	"github.com/prometheus/common/promslog/flag"
@@ -16,15 +12,7 @@ import (
 	"github.com/prometheus/exporter-toolkit/web"
 	webflag "github.com/prometheus/exporter-toolkit/web/kingpinflag"
 
-	"github.com/vexxhost/openstack_database_exporter/internal/collector/cinder"
-	"github.com/vexxhost/openstack_database_exporter/internal/collector/glance"
-	"github.com/vexxhost/openstack_database_exporter/internal/collector/keystone"
-	"github.com/vexxhost/openstack_database_exporter/internal/collector/magnum"
-	"github.com/vexxhost/openstack_database_exporter/internal/collector/manila"
-	"github.com/vexxhost/openstack_database_exporter/internal/collector/neutron"
-	"github.com/vexxhost/openstack_database_exporter/internal/collector/octavia"
-	"github.com/vexxhost/openstack_database_exporter/internal/collector/placement"
-	"github.com/vexxhost/openstack_database_exporter/internal/dsn"
+	"github.com/vexxhost/openstack_database_exporter/internal/collector"
 )
 
 var (
@@ -82,8 +70,16 @@ func main() {
 	logger.Info("Starting openstack_database_exporter", "version", version.Info())
 	logger.Info("Build context", "build_context", version.BuildContext())
 
-	reg := prometheus.NewRegistry()
-	registerCollectors(reg, logger)
+	reg := collector.NewRegistry(collector.Config{
+		CinderDatabaseURL:    *cinderDatabaseURL,
+		GlanceDatabaseURL:    *glanceDatabaseURL,
+		KeystoneDatabaseURL:  *keystoneDatabaseURL,
+		MagnumDatabaseURL:    *magnumDatabaseURL,
+		ManilaDatabaseURL:    *manilaDatabaseURL,
+		NeutronDatabaseURL:   *neutronDatabaseURL,
+		OctaviaDatabaseURL:   *octaviaDatabaseURL,
+		PlacementDatabaseURL: *placementDatabaseURL,
+	}, logger)
 
 	http.Handle(*metricsPath, promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg}))
 	if *metricsPath != "/" && *metricsPath != "" {
@@ -107,92 +103,4 @@ func main() {
 		logger.Error("Error starting HTTP server", "err", err)
 		os.Exit(1)
 	}
-}
-
-func registerCollectors(registry *prometheus.Registry, logger *slog.Logger) {
-	if *cinderDatabaseURL != "" {
-		if db, err := connectDB(*cinderDatabaseURL, logger, "cinder"); err == nil {
-			cinder.RegisterCollectors(registry, db, logger)
-		}
-	}
-
-	if *glanceDatabaseURL != "" {
-		if db, err := connectDB(*glanceDatabaseURL, logger, "glance"); err == nil {
-			glance.RegisterCollectors(registry, db, logger)
-		}
-	}
-
-	if *keystoneDatabaseURL != "" {
-		if db, err := connectDB(*keystoneDatabaseURL, logger, "keystone"); err == nil {
-			keystone.RegisterCollectors(registry, db, logger)
-		}
-	}
-
-	if *magnumDatabaseURL != "" {
-		if db, err := connectDB(*magnumDatabaseURL, logger, "magnum"); err == nil {
-			magnum.RegisterCollectors(registry, db, logger)
-		}
-	}
-
-	if *manilaDatabaseURL != "" {
-		if db, err := connectDB(*manilaDatabaseURL, logger, "manila"); err == nil {
-			manila.RegisterCollectors(registry, db, logger)
-		}
-	}
-
-	if *neutronDatabaseURL != "" {
-		if db, err := connectDB(*neutronDatabaseURL, logger, "neutron"); err == nil {
-			neutron.RegisterCollectors(registry, db, logger)
-		}
-	}
-
-	if *octaviaDatabaseURL != "" {
-		if db, err := connectDB(*octaviaDatabaseURL, logger, "octavia"); err == nil {
-			octavia.RegisterCollectors(registry, db, logger)
-		}
-	}
-
-	if *placementDatabaseURL != "" {
-		if db, err := connectDB(*placementDatabaseURL, logger, "placement"); err == nil {
-			placement.RegisterCollectors(registry, db, logger)
-		}
-	}
-}
-
-func connectDB(connectionString string, logger *slog.Logger, service string) (*sql.DB, error) {
-	// Parse oslo.db-style connection string
-	goDSN, err := dsn.ParseOsloDBConnectionString(connectionString)
-	if err != nil {
-		logger.Error("Failed to parse connection string",
-			"service", service,
-			"error", err,
-		)
-		return nil, err
-	}
-
-	db, err := sql.Open("mysql", goDSN)
-	if err != nil {
-		logger.Error("Failed to open database connection",
-			"service", service,
-			"error", err,
-		)
-		return nil, err
-	}
-
-	// Configure connection pool
-	db.SetMaxOpenConns(5)
-	db.SetMaxIdleConns(2)
-
-	// Test connection
-	if err := db.Ping(); err != nil {
-		logger.Error("Failed to ping database",
-			"service", service,
-			"error", err,
-		)
-		db.Close()
-		return nil, err
-	}
-
-	logger.Info("Connected to database", "service", service)
-	return db, nil
 }

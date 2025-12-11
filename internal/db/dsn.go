@@ -1,4 +1,4 @@
-package dsn
+package db
 
 import (
 	"fmt"
