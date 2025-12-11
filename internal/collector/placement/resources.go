@@ -7,20 +7,19 @@ import (
 	"strconv"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/vexxhost/openstack_database_exporter/internal/collector"
 	placementdb "github.com/vexxhost/openstack_database_exporter/internal/db/placement"
 )
 
 var (
 	placementUpDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "up"),
+		prometheus.BuildFQName(Namespace, Subsystem, "up"),
 		"up",
 		nil,
 		nil,
 	)
 
 	resourceTotalDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "resource_total"),
+		prometheus.BuildFQName(Namespace, Subsystem, "resource_total"),
 		"resource_total",
 		[]string{
 			"hostname",
@@ -30,7 +29,7 @@ var (
 	)
 
 	resourceAllocationRatioDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "resource_allocation_ratio"),
+		prometheus.BuildFQName(Namespace, Subsystem, "resource_allocation_ratio"),
 		"resource_allocation_ratio",
 		[]string{
 			"hostname",
@@ -40,7 +39,7 @@ var (
 	)
 
 	resourceReservedDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "resource_reserved"),
+		prometheus.BuildFQName(Namespace, Subsystem, "resource_reserved"),
 		"resource_reserved",
 		[]string{
 			"hostname",
@@ -50,7 +49,7 @@ var (
 	)
 
 	resourceUsageDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "resource_usage"),
+		prometheus.BuildFQName(Namespace, Subsystem, "resource_usage"),
 		"resource_usage",
 		[]string{
 			"hostname",
@@ -71,7 +70,7 @@ func NewResourcesCollector(db *sql.DB, logger *slog.Logger) *ResourcesCollector 
 		db:      db,
 		queries: placementdb.New(db),
 		logger: logger.With(
-			"namespace", collector.Namespace,
+			"namespace", Namespace,
 			"subsystem", Subsystem,
 			"collector", "resources",
 		),

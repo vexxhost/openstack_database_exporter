@@ -6,13 +6,12 @@ import (
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/vexxhost/openstack_database_exporter/internal/collector"
 	keystonedb "github.com/vexxhost/openstack_database_exporter/internal/db/keystone"
 )
 
 var (
 	groupsCountDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "groups"),
+		prometheus.BuildFQName(Namespace, Subsystem, "groups"),
 		"groups",
 		nil,
 		nil,
@@ -30,7 +29,7 @@ func NewGroupsCollector(db *sql.DB, logger *slog.Logger) *GroupsCollector {
 		db:      db,
 		queries: keystonedb.New(db),
 		logger: logger.With(
-			"namespace", collector.Namespace,
+			"namespace", Namespace,
 			"subsystem", Subsystem,
 			"collector", "groups",
 		),

@@ -7,13 +7,12 @@ import (
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/vexxhost/openstack_database_exporter/internal/collector"
 	magnumdb "github.com/vexxhost/openstack_database_exporter/internal/db/magnum"
 )
 
 var (
 	clusterMastersCountDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "cluster_masters"),
+		prometheus.BuildFQName(Namespace, Subsystem, "cluster_masters"),
 		"cluster_masters",
 		[]string{
 			"uuid",
@@ -38,7 +37,7 @@ func NewMastersCollector(db *sql.DB, logger *slog.Logger) *MastersCollector {
 		db:      db,
 		queries: magnumdb.New(db),
 		logger: logger.With(
-			"namespace", collector.Namespace,
+			"namespace", Namespace,
 			"subsystem", Subsystem,
 			"collector", "masters",
 		),
@@ -49,13 +48,13 @@ func (c *MastersCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- clusterMastersCountDesc
 }
 
-func (c *MastersCollector) Collect(ch chan<- prometheus.Metric) error {
+func (c *MastersCollector) Collect(ch chan<- prometheus.Metric) {
 	ctx := context.Background()
 
 	clusters, err := c.queries.GetClusterMetrics(ctx)
 	if err != nil {
 		c.logger.Error("Failed to get cluster metrics for masters", "error", err)
-		return err
+		return
 	}
 
 	// Individual cluster master metrics
@@ -105,6 +104,4 @@ func (c *MastersCollector) Collect(ch chan<- prometheus.Metric) error {
 			projectID,
 		)
 	}
-
-	return nil
 }

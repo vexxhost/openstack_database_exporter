@@ -9,13 +9,12 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/cast"
-	"github.com/vexxhost/openstack_database_exporter/internal/collector"
 	neutrondb "github.com/vexxhost/openstack_database_exporter/internal/db/neutron"
 )
 
 var (
 	haRouterAgentPortBindingDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "l3_agent_of_router"),
+		prometheus.BuildFQName(Namespace, Subsystem, "l3_agent_of_router"),
 		"l3_agent_of_router",
 		[]string{
 			"router_id",
@@ -40,7 +39,7 @@ func NewHARouterAgentPortBindingCollector(db *sql.DB, logger *slog.Logger) *HARo
 		db:      db,
 		queries: neutrondb.New(db),
 		logger: logger.With(
-			"namespace", collector.Namespace,
+			"namespace", Namespace,
 			"subsystem", Subsystem,
 			"collector", "ha_router_agent_port_bindings",
 		),

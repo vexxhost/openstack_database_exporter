@@ -7,13 +7,13 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/vexxhost/openstack_database_exporter/internal/collector"
 	octaviadb "github.com/vexxhost/openstack_database_exporter/internal/db/octavia"
+	"github.com/vexxhost/openstack_database_exporter/internal/util"
 )
 
 var (
 	amphoraStatusDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "amphora_status"),
+		prometheus.BuildFQName(Namespace, Subsystem, "amphora_status"),
 		"amphora_status",
 		[]string{
 			"id",
@@ -29,7 +29,7 @@ var (
 	)
 
 	totalAmphoraeDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "total_amphorae"),
+		prometheus.BuildFQName(Namespace, Subsystem, "total_amphorae"),
 		"total_amphorae",
 		nil,
 		nil,
@@ -47,7 +47,7 @@ func NewAmphoraCollector(db *sql.DB, logger *slog.Logger) *AmphoraCollector {
 		db:      db,
 		queries: octaviadb.New(db),
 		logger: logger.With(
-			"namespace", collector.Namespace,
+			"namespace", Namespace,
 			"subsystem", Subsystem,
 			"collector", "amphora",
 		),
@@ -77,7 +77,7 @@ func (c *AmphoraCollector) Collect(ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(
 			amphoraStatusDesc,
 			prometheus.GaugeValue,
-			collector.StatusToValue(amphora.Status, []string{
+			util.StatusToValue(amphora.Status, []string{
 				"BOOTING",
 				"ALLOCATED",
 				"READY",

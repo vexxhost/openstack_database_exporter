@@ -6,13 +6,12 @@ import (
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/vexxhost/openstack_database_exporter/internal/collector"
 	keystonedb "github.com/vexxhost/openstack_database_exporter/internal/db/keystone"
 )
 
 var (
 	regionsCountDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "regions"),
+		prometheus.BuildFQName(Namespace, Subsystem, "regions"),
 		"regions",
 		nil,
 		nil,
@@ -30,7 +29,7 @@ func NewRegionsCollector(db *sql.DB, logger *slog.Logger) *RegionsCollector {
 		db:      db,
 		queries: keystonedb.New(db),
 		logger: logger.With(
-			"namespace", collector.Namespace,
+			"namespace", Namespace,
 			"subsystem", Subsystem,
 			"collector", "regions",
 		),

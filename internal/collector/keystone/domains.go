@@ -6,20 +6,19 @@ import (
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/vexxhost/openstack_database_exporter/internal/collector"
 	keystonedb "github.com/vexxhost/openstack_database_exporter/internal/db/keystone"
 )
 
 var (
 	domainsCountDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "domains"),
+		prometheus.BuildFQName(Namespace, Subsystem, "domains"),
 		"domains",
 		nil,
 		nil,
 	)
 
 	domainsInfoDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(collector.Namespace, Subsystem, "domain_info"),
+		prometheus.BuildFQName(Namespace, Subsystem, "domain_info"),
 		"domain_info",
 		[]string{
 			"description",
@@ -42,7 +41,7 @@ func NewDomainsCollector(db *sql.DB, logger *slog.Logger) *DomainsCollector {
 		db:      db,
 		queries: keystonedb.New(db),
 		logger: logger.With(
-			"namespace", collector.Namespace,
+			"namespace", Namespace,
 			"subsystem", Subsystem,
 			"collector", "domains",
 		),

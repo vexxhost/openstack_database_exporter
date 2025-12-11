@@ -1,4 +1,4 @@
-package collector
+package util
 
 func StatusToValue(status string, statuses []string) float64 {
 	for idx, s := range statuses {
