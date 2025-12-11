@@ -110,83 +110,51 @@ func main() {
 }
 
 func registerCollectors(registry *prometheus.Registry, logger *slog.Logger) {
-	// Cinder collectors
 	if *cinderDatabaseURL != "" {
-		db, err := connectDB(*cinderDatabaseURL, logger, "cinder")
-		if err == nil {
-			registry.MustRegister(cinder.NewAgentsCollector(db, logger))
-			registry.MustRegister(cinder.NewLimitsCollector(db, logger))
-			registry.MustRegister(cinder.NewPoolsCollector(db, logger))
-			registry.MustRegister(cinder.NewSnapshotsCollector(db, logger))
-			registry.MustRegister(cinder.NewVolumesCollector(db, logger))
-			logger.Info("Registered Cinder collectors")
+		if db, err := connectDB(*cinderDatabaseURL, logger, "cinder"); err == nil {
+			cinder.RegisterCollectors(registry, db, logger)
 		}
 	}
 
-	// Glance collectors
 	if *glanceDatabaseURL != "" {
-		db, err := connectDB(*glanceDatabaseURL, logger, "glance")
-		if err == nil {
-			registry.MustRegister(glance.NewImagesCollector(db, logger))
-			logger.Info("Registered Glance collectors")
+		if db, err := connectDB(*glanceDatabaseURL, logger, "glance"); err == nil {
+			glance.RegisterCollectors(registry, db, logger)
 		}
 	}
 
-	// Keystone collectors
 	if *keystoneDatabaseURL != "" {
-		db, err := connectDB(*keystoneDatabaseURL, logger, "keystone")
-		if err == nil {
-			registry.MustRegister(keystone.NewIdentityCollector(db, logger))
-			logger.Info("Registered Keystone collectors")
+		if db, err := connectDB(*keystoneDatabaseURL, logger, "keystone"); err == nil {
+			keystone.RegisterCollectors(registry, db, logger)
 		}
 	}
 
-	// Magnum collectors
 	if *magnumDatabaseURL != "" {
-		db, err := connectDB(*magnumDatabaseURL, logger, "magnum")
-		if err == nil {
-			registry.MustRegister(magnum.NewClustersCollector(db, logger))
-			registry.MustRegister(magnum.NewMastersCollector(db, logger))
-			registry.MustRegister(magnum.NewNodesCollector(db, logger))
-			logger.Info("Registered Magnum collectors")
+		if db, err := connectDB(*magnumDatabaseURL, logger, "magnum"); err == nil {
+			magnum.RegisterCollectors(registry, db, logger)
 		}
 	}
 
-	// Manila collectors
 	if *manilaDatabaseURL != "" {
-		db, err := connectDB(*manilaDatabaseURL, logger, "manila")
-		if err == nil {
-			registry.MustRegister(manila.NewSharesCollector(db, logger))
-			logger.Info("Registered Manila collectors")
+		if db, err := connectDB(*manilaDatabaseURL, logger, "manila"); err == nil {
+			manila.RegisterCollectors(registry, db, logger)
 		}
 	}
 
-	// Neutron collectors
 	if *neutronDatabaseURL != "" {
-		db, err := connectDB(*neutronDatabaseURL, logger, "neutron")
-		if err == nil {
-			registry.MustRegister(neutron.NewHARouterAgentPortBindingCollector(db, logger))
-			logger.Info("Registered Neutron collectors")
+		if db, err := connectDB(*neutronDatabaseURL, logger, "neutron"); err == nil {
+			neutron.RegisterCollectors(registry, db, logger)
 		}
 	}
 
-	// Octavia collectors
 	if *octaviaDatabaseURL != "" {
-		db, err := connectDB(*octaviaDatabaseURL, logger, "octavia")
-		if err == nil {
-			registry.MustRegister(octavia.NewAmphoraCollector(db, logger))
-			registry.MustRegister(octavia.NewLoadBalancerCollector(db, logger))
-			registry.MustRegister(octavia.NewPoolCollector(db, logger))
-			logger.Info("Registered Octavia collectors")
+		if db, err := connectDB(*octaviaDatabaseURL, logger, "octavia"); err == nil {
+			octavia.RegisterCollectors(registry, db, logger)
 		}
 	}
 
-	// Placement collectors
 	if *placementDatabaseURL != "" {
-		db, err := connectDB(*placementDatabaseURL, logger, "placement")
-		if err == nil {
-			registry.MustRegister(placement.NewResourcesCollector(db, logger))
-			logger.Info("Registered Placement collectors")
+		if db, err := connectDB(*placementDatabaseURL, logger, "placement"); err == nil {
+			placement.RegisterCollectors(registry, db, logger)
 		}
 	}
 }
