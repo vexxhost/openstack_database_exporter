@@ -49,13 +49,13 @@ func (c *NodesCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- clusterNodesCountDesc
 }
 
-func (c *NodesCollector) Collect(ch chan<- prometheus.Metric) error {
+func (c *NodesCollector) Collect(ch chan<- prometheus.Metric) {
 	ctx := context.Background()
 
 	clusters, err := c.queries.GetClusterMetrics(ctx)
 	if err != nil {
 		c.logger.Error("Failed to get cluster metrics for nodes", "error", err)
-		return err
+		return
 	}
 
 	// Individual cluster node metrics
@@ -105,6 +105,4 @@ func (c *NodesCollector) Collect(ch chan<- prometheus.Metric) error {
 			projectID,
 		)
 	}
-
-	return nil
 }

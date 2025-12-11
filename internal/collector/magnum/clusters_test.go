@@ -110,5 +110,5 @@ type testClustersCollector struct {
 }
 
 func (t *testClustersCollector) Collect(ch chan<- prometheus.Metric) {
-	_ = t.ClustersCollector.Collect(ch)
+	t.ClustersCollector.Collect(ch)
 }

@@ -80,13 +80,13 @@ func (c *ClustersCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- clustersCountDesc
 }
 
-func (c *ClustersCollector) Collect(ch chan<- prometheus.Metric) error {
+func (c *ClustersCollector) Collect(ch chan<- prometheus.Metric) {
 	ctx := context.Background()
 
 	clusters, err := c.queries.GetClusterMetrics(ctx)
 	if err != nil {
 		c.logger.Error("Failed to get cluster metrics", "error", err)
-		return err
+		return
 	}
 
 	// total_clusters count
@@ -146,8 +146,6 @@ func (c *ClustersCollector) Collect(ch chan<- prometheus.Metric) error {
 			projectID,
 		)
 	}
-
-	return nil
 }
 
 func mapClusterStatusValue(status string) int {

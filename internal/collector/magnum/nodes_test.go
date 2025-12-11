@@ -95,5 +95,5 @@ type testNodesCollector struct {
 }
 
 func (t *testNodesCollector) Collect(ch chan<- prometheus.Metric) {
-	_ = t.NodesCollector.Collect(ch)
+	t.NodesCollector.Collect(ch)
 }
