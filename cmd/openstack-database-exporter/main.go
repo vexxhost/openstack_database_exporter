@@ -1,18 +1,20 @@
 package main
 
 import (
-	"context"
 	"database/sql"
 	"log/slog"
 	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
-	"time"
 
+	"github.com/alecthomas/kingpin/v2"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/prometheus/common/promslog"
+	"github.com/prometheus/common/promslog/flag"
+	"github.com/prometheus/common/version"
+	"github.com/prometheus/exporter-toolkit/web"
+	webflag "github.com/prometheus/exporter-toolkit/web/kingpinflag"
 
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/cinder"
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/glance"
@@ -25,92 +27,92 @@ import (
 	"github.com/vexxhost/openstack_database_exporter/internal/dsn"
 )
 
-const (
-	defaultPort = "9180"
+var (
+	metricsPath = kingpin.Flag(
+		"web.telemetry-path",
+		"Path under which to expose metrics.",
+	).Default("/metrics").String()
+	toolkitFlags = webflag.AddFlags(kingpin.CommandLine, ":9180")
+
+	// Database connection flags
+	cinderDatabaseURL = kingpin.Flag(
+		"cinder.database-url",
+		"Cinder database connection URL (oslo.db format)",
+	).Envar("CINDER_DATABASE_URL").String()
+	glanceDatabaseURL = kingpin.Flag(
+		"glance.database-url",
+		"Glance database connection URL (oslo.db format)",
+	).Envar("GLANCE_DATABASE_URL").String()
+	keystoneDatabaseURL = kingpin.Flag(
+		"keystone.database-url",
+		"Keystone database connection URL (oslo.db format)",
+	).Envar("KEYSTONE_DATABASE_URL").String()
+	magnumDatabaseURL = kingpin.Flag(
+		"magnum.database-url",
+		"Magnum database connection URL (oslo.db format)",
+	).Envar("MAGNUM_DATABASE_URL").String()
+	manilaDatabaseURL = kingpin.Flag(
+		"manila.database-url",
+		"Manila database connection URL (oslo.db format)",
+	).Envar("MANILA_DATABASE_URL").String()
+	neutronDatabaseURL = kingpin.Flag(
+		"neutron.database-url",
+		"Neutron database connection URL (oslo.db format)",
+	).Envar("NEUTRON_DATABASE_URL").String()
+	octaviaDatabaseURL = kingpin.Flag(
+		"octavia.database-url",
+		"Octavia database connection URL (oslo.db format)",
+	).Envar("OCTAVIA_DATABASE_URL").String()
+	placementDatabaseURL = kingpin.Flag(
+		"placement.database-url",
+		"Placement database connection URL (oslo.db format)",
+	).Envar("PLACEMENT_DATABASE_URL").String()
 )
 
 func main() {
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		Level: getLogLevel(),
-	}))
-	slog.SetDefault(logger)
+	promslogConfig := &promslog.Config{}
+	flag.AddFlags(kingpin.CommandLine, promslogConfig)
 
-	logger.Info("Starting OpenStack Database Exporter")
+	kingpin.Version(version.Print("openstack_database_exporter"))
+	kingpin.HelpFlag.Short('h')
+	kingpin.Parse()
 
-	// Create custom registry to avoid default Go metrics
-	registry := prometheus.NewRegistry()
+	logger := promslog.New(promslogConfig)
 
-	// Register collectors based on configured database URLs
-	registerCollectors(registry, logger)
+	logger.Info("Starting openstack_database_exporter", "version", version.Info())
+	logger.Info("Build context", "build_context", version.BuildContext())
 
-	// Setup HTTP server
-	mux := http.NewServeMux()
+	reg := prometheus.NewRegistry()
+	registerCollectors(reg, logger)
 
-	// Health check endpoint
-	mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("OpenStack Database Exporter"))
-	})
-
-	// Metrics endpoint
-	mux.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{
-		EnableOpenMetrics: true,
-	}))
-
-	port := os.Getenv("EXPORTER_PORT")
-	if port == "" {
-		port = defaultPort
-	}
-
-	server := &http.Server{
-		Addr:              ":" + port,
-		Handler:           mux,
-		ReadHeaderTimeout: 10 * time.Second,
-	}
-
-	// Graceful shutdown
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
-
-	go func() {
-		logger.Info("HTTP server listening", "port", port)
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			logger.Error("HTTP server error", "error", err)
+	http.Handle(*metricsPath, promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg}))
+	if *metricsPath != "/" && *metricsPath != "" {
+		landingPage, err := web.NewLandingPage(web.LandingConfig{
+			Name:        "OpenStack Database Exporter",
+			Description: "Prometheus Exporter for OpenStack Databases",
+			Version:     version.Info(),
+			Links: []web.LandingLinks{
+				{Address: *metricsPath, Text: "Metrics"},
+			},
+		})
+		if err != nil {
+			logger.Error("failed to create landing page", "err", err)
 			os.Exit(1)
 		}
-	}()
-
-	<-ctx.Done()
-	logger.Info("Shutting down...")
-
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	if err := server.Shutdown(shutdownCtx); err != nil {
-		logger.Error("Server shutdown error", "error", err)
+		http.Handle("/", landingPage)
 	}
 
-	logger.Info("Shutdown complete")
-}
-
-func getLogLevel() slog.Level {
-	level := os.Getenv("LOG_LEVEL")
-	switch level {
-	case "debug", "DEBUG":
-		return slog.LevelDebug
-	case "warn", "WARN", "warning", "WARNING":
-		return slog.LevelWarn
-	case "error", "ERROR":
-		return slog.LevelError
-	default:
-		return slog.LevelInfo
+	srv := &http.Server{}
+	if err := web.ListenAndServe(srv, toolkitFlags, logger); err != nil {
+		logger.Error("Error starting HTTP server", "err", err)
+		os.Exit(1)
 	}
 }
 
 func registerCollectors(registry *prometheus.Registry, logger *slog.Logger) {
 	// Cinder collectors
-	if dbURL := os.Getenv("CINDER_DATABASE_URL"); dbURL != "" {
-		db, err := connectDB(dbURL, logger, "cinder")
+	if *cinderDatabaseURL != "" {
+		db, err := connectDB(*cinderDatabaseURL, logger, "cinder")
 		if err == nil {
 			registry.MustRegister(cinder.NewAgentsCollector(db, logger))
 			registry.MustRegister(cinder.NewLimitsCollector(db, logger))
@@ -122,8 +124,8 @@ func registerCollectors(registry *prometheus.Registry, logger *slog.Logger) {
 	}
 
 	// Glance collectors
-	if dbURL := os.Getenv("GLANCE_DATABASE_URL"); dbURL != "" {
-		db, err := connectDB(dbURL, logger, "glance")
+	if *glanceDatabaseURL != "" {
+		db, err := connectDB(*glanceDatabaseURL, logger, "glance")
 		if err == nil {
 			registry.MustRegister(glance.NewImagesCollector(db, logger))
 			logger.Info("Registered Glance collectors")
@@ -131,8 +133,8 @@ func registerCollectors(registry *prometheus.Registry, logger *slog.Logger) {
 	}
 
 	// Keystone collectors
-	if dbURL := os.Getenv("KEYSTONE_DATABASE_URL"); dbURL != "" {
-		db, err := connectDB(dbURL, logger, "keystone")
+	if *keystoneDatabaseURL != "" {
+		db, err := connectDB(*keystoneDatabaseURL, logger, "keystone")
 		if err == nil {
 			registry.MustRegister(keystone.NewIdentityCollector(db, logger))
 			logger.Info("Registered Keystone collectors")
@@ -140,8 +142,8 @@ func registerCollectors(registry *prometheus.Registry, logger *slog.Logger) {
 	}
 
 	// Magnum collectors
-	if dbURL := os.Getenv("MAGNUM_DATABASE_URL"); dbURL != "" {
-		db, err := connectDB(dbURL, logger, "magnum")
+	if *magnumDatabaseURL != "" {
+		db, err := connectDB(*magnumDatabaseURL, logger, "magnum")
 		if err == nil {
 			registry.MustRegister(magnum.NewClustersCollector(db, logger))
 			registry.MustRegister(magnum.NewMastersCollector(db, logger))
@@ -151,8 +153,8 @@ func registerCollectors(registry *prometheus.Registry, logger *slog.Logger) {
 	}
 
 	// Manila collectors
-	if dbURL := os.Getenv("MANILA_DATABASE_URL"); dbURL != "" {
-		db, err := connectDB(dbURL, logger, "manila")
+	if *manilaDatabaseURL != "" {
+		db, err := connectDB(*manilaDatabaseURL, logger, "manila")
 		if err == nil {
 			registry.MustRegister(manila.NewSharesCollector(db, logger))
 			logger.Info("Registered Manila collectors")
@@ -160,8 +162,8 @@ func registerCollectors(registry *prometheus.Registry, logger *slog.Logger) {
 	}
 
 	// Neutron collectors
-	if dbURL := os.Getenv("NEUTRON_DATABASE_URL"); dbURL != "" {
-		db, err := connectDB(dbURL, logger, "neutron")
+	if *neutronDatabaseURL != "" {
+		db, err := connectDB(*neutronDatabaseURL, logger, "neutron")
 		if err == nil {
 			registry.MustRegister(neutron.NewHARouterAgentPortBindingCollector(db, logger))
 			logger.Info("Registered Neutron collectors")
@@ -169,8 +171,8 @@ func registerCollectors(registry *prometheus.Registry, logger *slog.Logger) {
 	}
 
 	// Octavia collectors
-	if dbURL := os.Getenv("OCTAVIA_DATABASE_URL"); dbURL != "" {
-		db, err := connectDB(dbURL, logger, "octavia")
+	if *octaviaDatabaseURL != "" {
+		db, err := connectDB(*octaviaDatabaseURL, logger, "octavia")
 		if err == nil {
 			registry.MustRegister(octavia.NewAmphoraCollector(db, logger))
 			registry.MustRegister(octavia.NewLoadBalancerCollector(db, logger))
@@ -180,8 +182,8 @@ func registerCollectors(registry *prometheus.Registry, logger *slog.Logger) {
 	}
 
 	// Placement collectors
-	if dbURL := os.Getenv("PLACEMENT_DATABASE_URL"); dbURL != "" {
-		db, err := connectDB(dbURL, logger, "placement")
+	if *placementDatabaseURL != "" {
+		db, err := connectDB(*placementDatabaseURL, logger, "placement")
 		if err == nil {
 			registry.MustRegister(placement.NewResourcesCollector(db, logger))
 			logger.Info("Registered Placement collectors")
@@ -212,7 +214,6 @@ func connectDB(connectionString string, logger *slog.Logger, service string) (*s
 	// Configure connection pool
 	db.SetMaxOpenConns(5)
 	db.SetMaxIdleConns(2)
-	db.SetConnMaxLifetime(5 * time.Minute)
 
 	// Test connection
 	if err := db.Ping(); err != nil {
