@@ -12,20 +12,19 @@ const (
 	Subsystem = "neutron"
 )
 
-func RegisterCollectors(registry *prometheus.Registry, databaseURL string, logger *slog.Logger) error {
+func RegisterCollectors(registry *prometheus.Registry, databaseURL string, logger *slog.Logger) {
 	if databaseURL == "" {
 		logger.Info("Collector not loaded", "service", "neutron", "reason", "database URL not configured")
-		return nil
+		return
 	}
 
 	conn, err := db.Connect(databaseURL)
 	if err != nil {
 		logger.Error("Failed to connect to database", "service", "neutron", "error", err)
-		return err
+		return
 	}
 
 	registry.MustRegister(NewHARouterAgentPortBindingCollector(conn, logger))
 
 	logger.Info("Registered collectors", "service", "neutron")
-	return nil
 }

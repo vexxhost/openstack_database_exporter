@@ -12,20 +12,19 @@ const (
 	Subsystem = "identity"
 )
 
-func RegisterCollectors(registry *prometheus.Registry, databaseURL string, logger *slog.Logger) error {
+func RegisterCollectors(registry *prometheus.Registry, databaseURL string, logger *slog.Logger) {
 	if databaseURL == "" {
 		logger.Info("Collector not loaded", "service", "keystone", "reason", "database URL not configured")
-		return nil
+		return
 	}
 
 	conn, err := db.Connect(databaseURL)
 	if err != nil {
 		logger.Error("Failed to connect to database", "service", "keystone", "error", err)
-		return err
+		return
 	}
 
 	registry.MustRegister(NewIdentityCollector(conn, logger))
 
 	logger.Info("Registered collectors", "service", "keystone")
-	return nil
 }

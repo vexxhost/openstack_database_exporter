@@ -12,16 +12,16 @@ const (
 	Subsystem = "loadbalancer"
 )
 
-func RegisterCollectors(registry *prometheus.Registry, databaseURL string, logger *slog.Logger) error {
+func RegisterCollectors(registry *prometheus.Registry, databaseURL string, logger *slog.Logger) {
 	if databaseURL == "" {
 		logger.Info("Collector not loaded", "service", "octavia", "reason", "database URL not configured")
-		return nil
+		return
 	}
 
 	conn, err := db.Connect(databaseURL)
 	if err != nil {
 		logger.Error("Failed to connect to database", "service", "octavia", "error", err)
-		return err
+		return
 	}
 
 	registry.MustRegister(NewAmphoraCollector(conn, logger))
@@ -29,5 +29,4 @@ func RegisterCollectors(registry *prometheus.Registry, databaseURL string, logge
 	registry.MustRegister(NewPoolCollector(conn, logger))
 
 	logger.Info("Registered collectors", "service", "octavia")
-	return nil
 }

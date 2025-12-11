@@ -12,16 +12,16 @@ const (
 	Subsystem = "cinder"
 )
 
-func RegisterCollectors(registry *prometheus.Registry, databaseURL string, logger *slog.Logger) error {
+func RegisterCollectors(registry *prometheus.Registry, databaseURL string, logger *slog.Logger) {
 	if databaseURL == "" {
 		logger.Info("Collector not loaded", "service", "cinder", "reason", "database URL not configured")
-		return nil
+		return
 	}
 
 	conn, err := db.Connect(databaseURL)
 	if err != nil {
 		logger.Error("Failed to connect to database", "service", "cinder", "error", err)
-		return err
+		return
 	}
 
 	registry.MustRegister(NewAgentsCollector(conn, logger))
@@ -31,5 +31,4 @@ func RegisterCollectors(registry *prometheus.Registry, databaseURL string, logge
 	registry.MustRegister(NewVolumesCollector(conn, logger))
 
 	logger.Info("Registered collectors", "service", "cinder")
-	return nil
 }
