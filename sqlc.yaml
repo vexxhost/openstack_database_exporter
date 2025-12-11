@@ -2,21 +2,6 @@ version: "2"
 
 sql:
   - engine: "mysql"
-    schema: "sql/neutron/schema.sql"
-    queries: "sql/neutron/queries.sql"
-    gen:
-      go:
-        package: "neutron"
-        out: "internal/db/neutron"
-        emit_exported_queries: true
-  # - engine: "mysql"
-  #   schema: "sql/nova/schema.sql"
-  #   queries: "sql/nova/queries.sql"
-  #   gen:
-  #     go:
-  #       package: "nova"
-  #       out: "internal/db/nova"
-  - engine: "mysql"
     schema: "sql/cinder/schema.sql"
     queries: "sql/cinder/queries.sql"
     gen:
@@ -25,28 +10,12 @@ sql:
         out: "internal/db/cinder"
         emit_exported_queries: true
   - engine: "mysql"
-    schema: "sql/octavia/schema.sql"
-    queries: "sql/octavia/queries.sql"
-    gen:
-      go:
-        package: "octavia"
-        out: "internal/db/octavia"
-        emit_exported_queries: true
-  - engine: "mysql"
     schema: "sql/glance/schema.sql"
     queries: "sql/glance/queries.sql"
     gen:
       go:
         package: "glance"
         out: "internal/db/glance"
-        emit_exported_queries: true
-  - engine: "mysql"
-    schema: "sql/manila/schema.sql"
-    queries: "sql/manila/queries.sql"
-    gen:
-      go:
-        package: "manila"
-        out: "internal/db/manila"
         emit_exported_queries: true
   - engine: "mysql"
     schema: "sql/keystone/schema.sql"
@@ -63,6 +32,30 @@ sql:
       go:
         package: "magnum"
         out: "internal/db/magnum"
+        emit_exported_queries: true
+  - engine: "mysql"
+    schema: "sql/manila/schema.sql"
+    queries: "sql/manila/queries.sql"
+    gen:
+      go:
+        package: "manila"
+        out: "internal/db/manila"
+        emit_exported_queries: true
+  - engine: "mysql"
+    schema: "sql/neutron/schema.sql"
+    queries: "sql/neutron/queries.sql"
+    gen:
+      go:
+        package: "neutron"
+        out: "internal/db/neutron"
+        emit_exported_queries: true
+  - engine: "mysql"
+    schema: "sql/octavia/schema.sql"
+    queries: "sql/octavia/queries.sql"
+    gen:
+      go:
+        package: "octavia"
+        out: "internal/db/octavia"
         emit_exported_queries: true
   - engine: "mysql"
     schema: "sql/placement/schema.sql"
