@@ -65,3 +65,11 @@ sql:
         package: "placement"
         out: "internal/db/placement"
         emit_exported_queries: true
+  - engine: "mysql"
+    schema: "sql/heat/schema.sql"
+    queries: "sql/heat/queries.sql"
+    gen:
+      go:
+        package: "heat"
+        out: "internal/db/heat"
+        emit_exported_queries: true
