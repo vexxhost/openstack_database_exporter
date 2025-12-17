@@ -31,6 +31,10 @@ var (
 		"glance.database-url",
 		"Glance database connection URL (oslo.db format)",
 	).Envar("GLANCE_DATABASE_URL").String()
+	ironicDatabaseURL = kingpin.Flag(
+		"ironic.database-url",
+		"Ironic database connection URL (oslo.db format)",
+	).Envar("IRONIC_DATABASE_URL").String()
 	keystoneDatabaseURL = kingpin.Flag(
 		"keystone.database-url",
 		"Keystone database connection URL (oslo.db format)",
@@ -73,6 +77,7 @@ func main() {
 	reg := collector.NewRegistry(collector.Config{
 		CinderDatabaseURL:    *cinderDatabaseURL,
 		GlanceDatabaseURL:    *glanceDatabaseURL,
+		IronicDatabaseURL:    *ironicDatabaseURL,
 		KeystoneDatabaseURL:  *keystoneDatabaseURL,
 		MagnumDatabaseURL:    *magnumDatabaseURL,
 		ManilaDatabaseURL:    *manilaDatabaseURL,

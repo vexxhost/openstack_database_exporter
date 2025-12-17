@@ -65,3 +65,11 @@ sql:
         package: "placement"
         out: "internal/db/placement"
         emit_exported_queries: true
+  - engine: "mysql"
+    schema: "sql/ironic/schema.sql"
+    queries: "sql/ironic/queries.sql"
+    gen:
+      go:
+        package: "ironic"
+        out: "internal/db/ironic"
+        emit_exported_queries: true

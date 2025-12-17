@@ -7,6 +7,7 @@ import (
 
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/cinder"
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/glance"
+	"github.com/vexxhost/openstack_database_exporter/internal/collector/ironic"
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/keystone"
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/magnum"
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/manila"
@@ -22,6 +23,7 @@ const (
 type Config struct {
 	CinderDatabaseURL    string
 	GlanceDatabaseURL    string
+	IronicDatabaseURL    string
 	KeystoneDatabaseURL  string
 	MagnumDatabaseURL    string
 	ManilaDatabaseURL    string
@@ -35,6 +37,7 @@ func NewRegistry(cfg Config, logger *slog.Logger) *prometheus.Registry {
 
 	cinder.RegisterCollectors(reg, cfg.CinderDatabaseURL, logger)
 	glance.RegisterCollectors(reg, cfg.GlanceDatabaseURL, logger)
+	ironic.RegisterCollectors(reg, cfg.IronicDatabaseURL, logger)
 	keystone.RegisterCollectors(reg, cfg.KeystoneDatabaseURL, logger)
 	magnum.RegisterCollectors(reg, cfg.MagnumDatabaseURL, logger)
 	manila.RegisterCollectors(reg, cfg.ManilaDatabaseURL, logger)
