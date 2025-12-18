@@ -11,6 +11,7 @@ import (
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/magnum"
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/manila"
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/neutron"
+	"github.com/vexxhost/openstack_database_exporter/internal/collector/nova"
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/octavia"
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/placement"
 )
@@ -28,6 +29,8 @@ type Config struct {
 	NeutronDatabaseURL   string
 	OctaviaDatabaseURL   string
 	PlacementDatabaseURL string
+	NovaDatabaseURL      string
+	NovaAPIDatabaseURL   string
 }
 
 func NewRegistry(cfg Config, logger *slog.Logger) *prometheus.Registry {
@@ -39,6 +42,7 @@ func NewRegistry(cfg Config, logger *slog.Logger) *prometheus.Registry {
 	magnum.RegisterCollectors(reg, cfg.MagnumDatabaseURL, logger)
 	manila.RegisterCollectors(reg, cfg.ManilaDatabaseURL, logger)
 	neutron.RegisterCollectors(reg, cfg.NeutronDatabaseURL, logger)
+	nova.RegisterCollectors(reg, cfg.NovaDatabaseURL, cfg.NovaAPIDatabaseURL, cfg.PlacementDatabaseURL, logger)
 	octavia.RegisterCollectors(reg, cfg.OctaviaDatabaseURL, logger)
 	placement.RegisterCollectors(reg, cfg.PlacementDatabaseURL, logger)
 

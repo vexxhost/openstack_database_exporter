@@ -62,3 +62,41 @@ CREATE TABLE
         CONSTRAINT `inventories_ibfk_1` FOREIGN KEY (`resource_provider_id`) REFERENCES `resource_providers` (`id`),
         CONSTRAINT `inventories_ibfk_2` FOREIGN KEY (`resource_class_id`) REFERENCES `resource_classes` (`id`)
     );
+
+CREATE TABLE
+    `projects` (
+        `id` int(11) NOT NULL AUTO_INCREMENT,
+        `external_id` varchar(255) NOT NULL,
+        `created_at` datetime DEFAULT NULL,
+        `updated_at` datetime DEFAULT NULL,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `uniq_projects0external_id` (`external_id`)
+    );
+
+CREATE TABLE
+    `users` (
+        `id` int(11) NOT NULL AUTO_INCREMENT,
+        `external_id` varchar(255) NOT NULL,
+        `created_at` datetime DEFAULT NULL,
+        `updated_at` datetime DEFAULT NULL,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `uniq_users0external_id` (`external_id`)
+    );
+
+CREATE TABLE
+    `consumers` (
+        `id` int(11) NOT NULL AUTO_INCREMENT,
+        `uuid` varchar(36) NOT NULL,
+        `project_id` int(11) NOT NULL,
+        `user_id` int(11) NOT NULL,
+        `generation` int(11) NOT NULL DEFAULT '0',
+        `consumer_type_id` int(11) DEFAULT NULL,
+        `created_at` datetime DEFAULT NULL,
+        `updated_at` datetime DEFAULT NULL,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `uniq_consumers0uuid` (`uuid`),
+        KEY `consumers_project_id_user_id_uuid_idx` (`project_id`,`user_id`,`uuid`),
+        KEY `consumers_project_id_uuid_idx` (`project_id`,`uuid`),
+        CONSTRAINT `consumers_ibfk_1` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`),
+        CONSTRAINT `consumers_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+    );

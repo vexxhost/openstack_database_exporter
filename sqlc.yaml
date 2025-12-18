@@ -65,3 +65,19 @@ sql:
         package: "placement"
         out: "internal/db/placement"
         emit_exported_queries: true
+  - engine: "mysql"
+    schema: "sql/nova/schema.sql"
+    queries: "sql/nova/queries.sql"
+    gen:
+      go:
+        package: "nova"
+        out: "internal/db/nova"
+        emit_exported_queries: true
+  - engine: "mysql"
+    schema: "sql/nova_api/schema.sql"
+    queries: "sql/nova_api/queries.sql"
+    gen:
+      go:
+        package: "nova_api"
+        out: "internal/db/nova_api"
+        emit_exported_queries: true
