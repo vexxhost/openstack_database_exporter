@@ -61,5 +61,5 @@ type computeNodesCollectorWrapper struct {
 }
 
 func (w *computeNodesCollectorWrapper) Collect(ch chan<- prometheus.Metric) {
-	w.ComputeNodesCollector.Collect(ch)
+	_ = w.ComputeNodesCollector.Collect(ch)
 }

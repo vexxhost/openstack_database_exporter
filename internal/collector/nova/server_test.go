@@ -59,5 +59,5 @@ type serverCollectorWrapper struct {
 }
 
 func (w *serverCollectorWrapper) Collect(ch chan<- prometheus.Metric) {
-	w.ServerCollector.Collect(ch)
+	_ = w.ServerCollector.Collect(ch)
 }

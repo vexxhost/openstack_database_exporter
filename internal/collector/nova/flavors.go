@@ -2,6 +2,7 @@ package nova
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log/slog"
 
@@ -9,6 +10,13 @@ import (
 	"github.com/vexxhost/openstack_database_exporter/internal/db/nova"
 	"github.com/vexxhost/openstack_database_exporter/internal/db/nova_api"
 )
+
+func nullInt32ToString(ni sql.NullInt32) string {
+	if ni.Valid {
+		return fmt.Sprintf("%d", ni.Int32)
+	}
+	return "0"
+}
 
 // FlavorsCollector collects metrics about Nova flavors
 type FlavorsCollector struct {

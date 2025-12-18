@@ -125,8 +125,7 @@ func (c *ServerCollector) collectServerMetrics(ch chan<- prometheus.Metric) erro
 		statusValue := float64(mapServerStatus(instance.VmState.String))
 
 		// Build instance name for libvirt
-		var instanceLibvirt string
-		instanceLibvirt = fmt.Sprintf("instance-%08x", instance.ID)
+		instanceLibvirt := fmt.Sprintf("instance-%08x", instance.ID)
 
 		ch <- prometheus.MustNewConstMetric(
 			c.serverMetrics["server_status"],
@@ -148,14 +147,14 @@ func (c *ServerCollector) collectServerMetrics(ch chan<- prometheus.Metric) erro
 		)
 	}
 
-	// Total VMs count
+	// Emit total VMs count
 	ch <- prometheus.MustNewConstMetric(
 		c.serverMetrics["total_vms"],
 		prometheus.GaugeValue,
 		float64(totalVMs),
 	)
 
-	// Availability zones count
+	// Emit availability zones count
 	ch <- prometheus.MustNewConstMetric(
 		c.serverMetrics["availability_zones"],
 		prometheus.GaugeValue,

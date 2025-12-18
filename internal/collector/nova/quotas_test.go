@@ -62,5 +62,5 @@ type quotasCollectorWrapper struct {
 }
 
 func (w *quotasCollectorWrapper) Collect(ch chan<- prometheus.Metric) {
-	w.QuotasCollector.Collect(ch)
+	_ = w.QuotasCollector.Collect(ch)
 }

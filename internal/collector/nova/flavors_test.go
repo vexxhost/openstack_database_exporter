@@ -60,5 +60,5 @@ type flavorsCollectorWrapper struct {
 }
 
 func (w *flavorsCollectorWrapper) Collect(ch chan<- prometheus.Metric) {
-	w.FlavorsCollector.Collect(ch)
+	_ = w.FlavorsCollector.Collect(ch)
 }

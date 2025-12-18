@@ -68,5 +68,5 @@ type limitsCollectorWrapper struct {
 }
 
 func (w *limitsCollectorWrapper) Collect(ch chan<- prometheus.Metric) {
-	w.LimitsCollector.Collect(ch)
+	_ = w.LimitsCollector.Collect(ch)
 }

@@ -26,7 +26,6 @@ type ComputeCollector struct {
 	logger                *slog.Logger
 	servicesCollector     *ServicesCollector
 	flavorsCollector      *FlavorsCollector
-	instancesCollector    *InstancesCollector
 	quotasCollector       *QuotasCollector
 	limitsCollector       *LimitsCollector
 	computeNodesCollector *ComputeNodesCollector
@@ -49,7 +48,6 @@ func NewComputeCollector(novaDB, novaApiDB, placementDB *sql.DB, logger *slog.Lo
 		logger:                logger,
 		servicesCollector:     NewServicesCollector(logger, novaQueries, novaApiQueries),
 		flavorsCollector:      NewFlavorsCollector(logger, novaQueries, novaApiQueries),
-		instancesCollector:    NewInstancesCollector(logger, novaQueries, novaApiQueries),
 		quotasCollector:       NewQuotasCollector(logger, novaQueries, novaApiQueries, placementQueries),
 		limitsCollector:       NewLimitsCollector(logger, novaQueries, novaApiQueries, placementQueries),
 		computeNodesCollector: NewComputeNodesCollector(logger, novaQueries, novaApiQueries),
@@ -61,7 +59,6 @@ func (c *ComputeCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- novaUpDesc
 	c.servicesCollector.Describe(ch)
 	c.flavorsCollector.Describe(ch)
-	c.instancesCollector.Describe(ch)
 	c.quotasCollector.Describe(ch)
 	c.limitsCollector.Describe(ch)
 	c.computeNodesCollector.Describe(ch)
@@ -80,11 +77,6 @@ func (c *ComputeCollector) Collect(ch chan<- prometheus.Metric) {
 
 	if err := c.flavorsCollector.Collect(ch); err != nil {
 		c.logger.Error("Flavors collector failed", "error", err)
-		hasError = true
-	}
-
-	if err := c.instancesCollector.Collect(ch); err != nil {
-		c.logger.Error("Instances collector failed", "error", err)
 		hasError = true
 	}
 

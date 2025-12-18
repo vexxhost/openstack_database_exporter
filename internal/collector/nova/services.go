@@ -19,27 +19,11 @@ func nullStringToString(ns sql.NullString) string {
 }
 
 var (
-	// Agent state metrics
+	// Agent state metrics - matches original openstack-exporter
 	agentStateDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(Namespace, Subsystem, "agent_state"),
 		"agent_state",
-		[]string{"adminState", "agent_version", "availability_zone", "binary", "host", "project"},
-		nil,
-	)
-
-	// Service count metrics
-	servicesDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(Namespace, Subsystem, "services"),
-		"services",
-		nil,
-		nil,
-	)
-
-	// Service information metrics
-	serviceInfoDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(Namespace, Subsystem, "service_info"),
-		"Nova service information",
-		[]string{"id", "uuid", "host", "binary", "topic", "disabled", "forced_down"},
+		[]string{"adminState", "disabledReason", "hostname", "id", "service", "zone"},
 		nil,
 	)
 )
@@ -64,8 +48,6 @@ func NewServicesCollector(logger *slog.Logger, novaDB *novadb.Queries, novaAPIDB
 
 func (c *ServicesCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- agentStateDesc
-	ch <- servicesDesc
-	ch <- serviceInfoDesc
 }
 
 func (c *ServicesCollector) Collect(ch chan<- prometheus.Metric) error {
@@ -76,50 +58,37 @@ func (c *ServicesCollector) Collect(ch chan<- prometheus.Metric) error {
 		return fmt.Errorf("failed to get services: %w", err)
 	}
 
-	// Emit service count
-	ch <- prometheus.MustNewConstMetric(
-		servicesDesc,
-		prometheus.GaugeValue,
-		float64(len(services)),
-	)
-
-	// Emit per-service metrics
+	// Emit per-service agent state metrics matching original exporter
 	for _, service := range services {
-		// Agent state metric (1 = up, 0 = down based on last_seen_up and disabled status)
+		// Determine admin state and disabled reason
 		adminState := "enabled"
+		disabledReason := ""
+		agentValue := float64(1) // 1 for enabled, 0 for disabled
+
 		if service.Disabled.Valid && service.Disabled.Bool {
 			adminState = "disabled"
+			agentValue = 0
+			if service.DisabledReason.Valid {
+				disabledReason = service.DisabledReason.String
+			}
 		}
 
-		agentValue := float64(1) // Assume up unless we have specific down indicators
-		if (service.Disabled.Valid && service.Disabled.Bool) || (service.ForcedDown.Valid && service.ForcedDown.Bool) {
-			agentValue = 0
+		// Determine zone based on service binary (matching original logic)
+		zone := "nova" // Default zone for compute services
+		if service.Binary.Valid && service.Binary.String == "nova-scheduler" {
+			zone = "internal"
 		}
 
 		ch <- prometheus.MustNewConstMetric(
 			agentStateDesc,
-			prometheus.GaugeValue,
+			prometheus.CounterValue, // Original uses counter, not gauge
 			agentValue,
 			adminState,
-			fmt.Sprintf("%d", service.Version.Int32),
-			"nova", // Default availability zone for Nova
-			nullStringToString(service.Binary),
+			disabledReason,
 			nullStringToString(service.Host),
-			"nova", // Project name
-		)
-
-		// Service information metric
-		ch <- prometheus.MustNewConstMetric(
-			serviceInfoDesc,
-			prometheus.GaugeValue,
-			1, // Info metric always has value 1
 			fmt.Sprintf("%d", service.ID),
-			nullStringToString(service.Uuid),
-			nullStringToString(service.Host),
 			nullStringToString(service.Binary),
-			nullStringToString(service.Topic),
-			fmt.Sprintf("%t", service.Disabled.Valid && service.Disabled.Bool),
-			fmt.Sprintf("%t", service.ForcedDown.Valid && service.ForcedDown.Bool),
+			zone,
 		)
 	}
 
