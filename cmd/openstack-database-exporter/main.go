@@ -55,6 +55,14 @@ var (
 		"placement.database-url",
 		"Placement database connection URL (oslo.db format)",
 	).Envar("PLACEMENT_DATABASE_URL").String()
+	novaDatabaseURL = kingpin.Flag(
+		"nova.database-url",
+		"Nova database connection URL (oslo.db format)",
+	).Envar("NOVA_DATABASE_URL").String()
+	novaAPIDatabaseURL = kingpin.Flag(
+		"nova-api.database-url",
+		"Nova API database connection URL (oslo.db format)",
+	).Envar("NOVA_API_DATABASE_URL").String()
 )
 
 func main() {
@@ -79,6 +87,8 @@ func main() {
 		NeutronDatabaseURL:   *neutronDatabaseURL,
 		OctaviaDatabaseURL:   *octaviaDatabaseURL,
 		PlacementDatabaseURL: *placementDatabaseURL,
+		NovaDatabaseURL:      *novaDatabaseURL,
+		NovaAPIDatabaseURL:   *novaAPIDatabaseURL,
 	}, logger)
 
 	http.Handle(*metricsPath, promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg}))
