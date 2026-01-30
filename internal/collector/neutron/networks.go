@@ -56,6 +56,7 @@ func NewNetworkCollector(db *sql.DB, logger *slog.Logger) *NetworkCollector {
 
 func (c *NetworkCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- networkDesc
+	ch <- networksDesc
 }
 
 func (c *NetworkCollector) Collect(ch chan<- prometheus.Metric) error {

@@ -129,6 +129,7 @@ func NewRouterCollector(db *sql.DB, logger *slog.Logger) *RouterCollector {
 
 func (c *RouterCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- routerDesc
+	ch <- routersDesc
 }
 
 func (c *RouterCollector) Collect(ch chan<- prometheus.Metric) error {

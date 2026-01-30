@@ -59,6 +59,8 @@ func NewFloatingIPCollector(db *sql.DB, logger *slog.Logger) *FloatingIPCollecto
 
 func (c *FloatingIPCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- floatingIPDesc
+	ch <- floatingIPsDesc
+	ch <- floatingsIPsAssociatedNotActive
 }
 
 func (c *FloatingIPCollector) Collect(ch chan<- prometheus.Metric) error {

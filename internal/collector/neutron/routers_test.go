@@ -3,6 +3,7 @@ package neutron
 import (
 	"database/sql"
 	"log/slog"
+	"regexp"
 	"testing"
 	"time"
 
@@ -151,4 +152,49 @@ type testHARouterAgentPortBindingCollector struct {
 
 func (t *testHARouterAgentPortBindingCollector) Collect(ch chan<- prometheus.Metric) {
 	_ = t.HARouterAgentPortBindingCollector.Collect(ch)
+}
+
+func TestRouterCollector(t *testing.T) {
+	tests := []testutil.CollectorTestCase{
+		{
+			Name: "successful collection of routers",
+			SetupMock: func(mock sqlmock.Sqlmock) {
+				rows := sqlmock.NewRows([]string{
+					"id",
+					"name",
+					"status",
+					"admin_state_up",
+					"project_id",
+					"gw_port_id",
+				}).AddRow(
+					"f490f72e-f449-41be-857e-825096adacde",
+					"router1",
+					"ACTIVE",
+					1,
+					"d6fbbee0aa214c20b984292531ce7bd0",
+					"547e89b2-f860-4aaf-b515-9a35b02f634d",
+				)
+				mock.ExpectQuery(regexp.QuoteMeta(neutrondb.GetRouters)).WillReturnRows(rows)
+			},
+			ExpectedMetrics: `# HELP openstack_neutron_router router
+# TYPE openstack_neutron_router gauge
+openstack_neutron_router{admin_state_up="true",external_network_id="547e89b2-f860-4aaf-b515-9a35b02f634d",id="f490f72e-f449-41be-857e-825096adacde",name="router1",project_id="d6fbbee0aa214c20b984292531ce7bd0",status="ACTIVE"} 1
+# HELP openstack_neutron_routers routers
+# TYPE openstack_neutron_routers gauge
+openstack_neutron_routers 1
+`,
+		},
+	}
+
+	testutil.RunCollectorTests(t, tests, func(db *sql.DB, logger *slog.Logger) prometheus.Collector {
+		return &testRouterCollector{NewRouterCollector(db, logger)}
+	})
+}
+
+type testRouterCollector struct {
+	*RouterCollector
+}
+
+func (t *testRouterCollector) Collect(ch chan<- prometheus.Metric) {
+	_ = t.RouterCollector.Collect(ch)
 }

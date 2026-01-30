@@ -54,6 +54,7 @@ func NewPortCollector(db *sql.DB, logger *slog.Logger) *PortCollector {
 
 func (c *PortCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- portDesc
+	ch <- portsDesc
 }
 
 func (c *PortCollector) Collect(ch chan<- prometheus.Metric) error {
