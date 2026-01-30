@@ -50,13 +50,13 @@ func (c *HARouterAgentPortBindingCollector) Describe(ch chan<- *prometheus.Desc)
 	ch <- haRouterAgentPortBindingDesc
 }
 
-func (c *HARouterAgentPortBindingCollector) Collect(ch chan<- prometheus.Metric) {
+func (c *HARouterAgentPortBindingCollector) Collect(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
 
 	bindings, err := c.queries.GetHARouterAgentPortBindingsWithAgents(ctx)
 	if err != nil {
 		c.logger.Error("failed to query", "error", err)
-		return
+		return err
 	}
 
 	for _, binding := range bindings {
@@ -78,4 +78,98 @@ func (c *HARouterAgentPortBindingCollector) Collect(ch chan<- prometheus.Metric)
 			binding.AgentHost.String,
 		)
 	}
+	return nil
+}
+
+var (
+	routerDesc = prometheus.NewDesc(
+		prometheus.BuildFQName(Namespace, Subsystem, "router"),
+		"router",
+		[]string{
+			"id",
+			"name",
+			"status",
+			"admin_state_up",
+			"project_id",
+			"external_network_id",
+		},
+		nil,
+	)
+	routersDesc = prometheus.NewDesc(
+		prometheus.BuildFQName(Namespace, Subsystem, "routers"),
+		"routers",
+		nil,
+		nil,
+	)
+	notActiveRoutersDesc = prometheus.NewDesc(
+		prometheus.BuildFQName(Namespace, Subsystem, "routers_not_active"),
+		"routers_not_active",
+		nil,
+		nil,
+	)
+)
+
+type RouterCollector struct {
+	db      *sql.DB
+	queries *neutrondb.Queries
+	logger  *slog.Logger
+}
+
+func NewRouterCollector(db *sql.DB, logger *slog.Logger) *RouterCollector {
+	return &RouterCollector{
+		db:      db,
+		queries: neutrondb.New(db),
+		logger: logger.With(
+			"namespace", Namespace,
+			"subsystem", Subsystem,
+			"collector", "routers",
+		),
+	}
+}
+
+func (c *RouterCollector) Describe(ch chan<- *prometheus.Desc) {
+	ch <- routerDesc
+}
+
+func (c *RouterCollector) Collect(ch chan<- prometheus.Metric) error {
+	ctx := context.Background()
+
+	routers, err := c.queries.GetRouters(ctx)
+	if err != nil {
+		c.logger.Error("failed to query", "error", err)
+		return err
+	}
+
+	ch <- prometheus.MustNewConstMetric(
+		routersDesc,
+		prometheus.GaugeValue,
+		float64(len(routers)),
+	)
+
+	for _, router := range routers {
+		ch <- prometheus.MustNewConstMetric(
+			routerDesc,
+			prometheus.GaugeValue,
+			cast.ToFloat64(1),
+			router.ID,
+			router.Name.String,
+			router.Status.String,
+			cast.ToString(router.AdminStateUp.Bool),
+			router.ProjectID.String,
+			router.GwPortID.String,
+		)
+	}
+	naRouters, err := c.queries.GetNotActiveRouters(ctx)
+	if err != nil {
+		c.logger.Error("failed to query", "error", err)
+		return err
+	}
+
+	ch <- prometheus.MustNewConstMetric(
+		notActiveRoutersDesc,
+		prometheus.GaugeValue,
+		float64(len(naRouters)),
+	)
+	return nil
+
 }

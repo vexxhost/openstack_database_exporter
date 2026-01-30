@@ -54,6 +54,92 @@ func (ns NullHaRouterAgentPortBindingsState) Value() (driver.Value, error) {
 	return string(ns.HaRouterAgentPortBindingsState), nil
 }
 
+type SubnetsIpv6AddressMode string
+
+const (
+	SubnetsIpv6AddressModeSlaac           SubnetsIpv6AddressMode = "slaac"
+	SubnetsIpv6AddressModeDhcpv6Stateful  SubnetsIpv6AddressMode = "dhcpv6-stateful"
+	SubnetsIpv6AddressModeDhcpv6Stateless SubnetsIpv6AddressMode = "dhcpv6-stateless"
+)
+
+func (e *SubnetsIpv6AddressMode) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = SubnetsIpv6AddressMode(s)
+	case string:
+		*e = SubnetsIpv6AddressMode(s)
+	default:
+		return fmt.Errorf("unsupported scan type for SubnetsIpv6AddressMode: %T", src)
+	}
+	return nil
+}
+
+type NullSubnetsIpv6AddressMode struct {
+	SubnetsIpv6AddressMode SubnetsIpv6AddressMode
+	Valid                  bool // Valid is true if SubnetsIpv6AddressMode is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullSubnetsIpv6AddressMode) Scan(value interface{}) error {
+	if value == nil {
+		ns.SubnetsIpv6AddressMode, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.SubnetsIpv6AddressMode.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullSubnetsIpv6AddressMode) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.SubnetsIpv6AddressMode), nil
+}
+
+type SubnetsIpv6RaMode string
+
+const (
+	SubnetsIpv6RaModeSlaac           SubnetsIpv6RaMode = "slaac"
+	SubnetsIpv6RaModeDhcpv6Stateful  SubnetsIpv6RaMode = "dhcpv6-stateful"
+	SubnetsIpv6RaModeDhcpv6Stateless SubnetsIpv6RaMode = "dhcpv6-stateless"
+)
+
+func (e *SubnetsIpv6RaMode) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = SubnetsIpv6RaMode(s)
+	case string:
+		*e = SubnetsIpv6RaMode(s)
+	default:
+		return fmt.Errorf("unsupported scan type for SubnetsIpv6RaMode: %T", src)
+	}
+	return nil
+}
+
+type NullSubnetsIpv6RaMode struct {
+	SubnetsIpv6RaMode SubnetsIpv6RaMode
+	Valid             bool // Valid is true if SubnetsIpv6RaMode is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullSubnetsIpv6RaMode) Scan(value interface{}) error {
+	if value == nil {
+		ns.SubnetsIpv6RaMode, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.SubnetsIpv6RaMode.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullSubnetsIpv6RaMode) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.SubnetsIpv6RaMode), nil
+}
+
 type Agent struct {
 	ID                 string
 	Host               string
@@ -61,9 +147,133 @@ type Agent struct {
 	HeartbeatTimestamp time.Time
 }
 
+type Dnsnameserver struct {
+	Address  string
+	SubnetID string
+	Order    int32
+}
+
+type Externalnetwork struct {
+	NetworkID string
+	IsDefault bool
+}
+
+type Floatingip struct {
+	ProjectID         sql.NullString
+	ID                string
+	FloatingIpAddress string
+	FloatingNetworkID string
+	FloatingPortID    string
+	FixedPortID       sql.NullString
+	FixedIpAddress    sql.NullString
+	RouterID          sql.NullString
+	LastKnownRouterID sql.NullString
+	Status            sql.NullString
+	StandardAttrID    int64
+}
+
 type HaRouterAgentPortBinding struct {
 	PortID    string
 	RouterID  string
 	L3AgentID sql.NullString
 	State     NullHaRouterAgentPortBindingsState
+}
+
+type Ipallocation struct {
+	PortID    sql.NullString
+	IpAddress string
+	SubnetID  string
+	NetworkID string
+}
+
+type Ml2PortBinding struct {
+	PortID     string
+	Host       string
+	VifType    string
+	VnicType   string
+	Profile    string
+	VifDetails string
+	Status     string
+}
+
+type Network struct {
+	ProjectID             sql.NullString
+	ID                    string
+	Name                  sql.NullString
+	Status                sql.NullString
+	AdminStateUp          sql.NullBool
+	VlanTransparent       sql.NullBool
+	StandardAttrID        int64
+	AvailabilityZoneHints sql.NullString
+	Mtu                   int32
+}
+
+type Networkrbac struct {
+	ID            string
+	ObjectID      string
+	ProjectID     sql.NullString
+	TargetProject string
+	Action        string
+}
+
+type Networksegment struct {
+	ID              string
+	NetworkID       string
+	NetworkType     string
+	PhysicalNetwork sql.NullString
+	SegmentationID  sql.NullInt32
+	IsDynamic       bool
+	SegmentIndex    int32
+	StandardAttrID  int64
+	Name            sql.NullString
+}
+
+type Port struct {
+	ProjectID      sql.NullString
+	ID             string
+	Name           sql.NullString
+	NetworkID      string
+	MacAddress     string
+	AdminStateUp   bool
+	Status         string
+	DeviceID       string
+	DeviceOwner    string
+	StandardAttrID int64
+	IpAllocation   sql.NullString
+}
+
+type Router struct {
+	ProjectID      sql.NullString
+	ID             string
+	Name           sql.NullString
+	Status         sql.NullString
+	AdminStateUp   sql.NullBool
+	GwPortID       sql.NullString
+	EnableSnat     bool
+	StandardAttrID int64
+	FlavorID       sql.NullString
+}
+
+type Securitygroup struct {
+	ProjectID      sql.NullString
+	ID             string
+	Name           sql.NullString
+	StandardAttrID int64
+	Stateful       bool
+}
+
+type Subnet struct {
+	ProjectID       sql.NullString
+	ID              string
+	Name            sql.NullString
+	NetworkID       string
+	IpVersion       int32
+	Cidr            string
+	GatewayIp       sql.NullString
+	EnableDhcp      sql.NullBool
+	Ipv6RaMode      NullSubnetsIpv6RaMode
+	Ipv6AddressMode NullSubnetsIpv6AddressMode
+	SubnetpoolID    sql.NullString
+	StandardAttrID  int64
+	SegmentID       sql.NullString
 }
