@@ -2,8 +2,11 @@ package neutron
 
 import (
 	"database/sql"
+	"log/slog"
 	"testing"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	neutrondb "github.com/vexxhost/openstack_database_exporter/internal/db/neutron"
@@ -137,5 +140,15 @@ openstack_neutron_l3_agent_of_router{agent_admin_up="false",agent_alive="false",
 		},
 	}
 
-	testutil.RunCollectorTests(t, tests, NewHARouterAgentPortBindingCollector)
+	testutil.RunCollectorTests(t, tests, func(db *sql.DB, logger *slog.Logger) prometheus.Collector {
+		return &testHARouterAgentPortBindingCollector{NewHARouterAgentPortBindingCollector(db, logger)}
+	})
+}
+
+type testHARouterAgentPortBindingCollector struct {
+	*HARouterAgentPortBindingCollector
+}
+
+func (t *testHARouterAgentPortBindingCollector) Collect(ch chan<- prometheus.Metric) {
+	_ = t.HARouterAgentPortBindingCollector.Collect(ch)
 }
