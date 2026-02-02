@@ -182,6 +182,9 @@ openstack_neutron_router{admin_state_up="true",external_network_id="547e89b2-f86
 # HELP openstack_neutron_routers routers
 # TYPE openstack_neutron_routers gauge
 openstack_neutron_routers 1
+# HELP openstack_neutron_routers_not_active routers_not_active
+# TYPE openstack_neutron_routers_not_active gauge
+openstack_neutron_routers_not_active 0
 `,
 		},
 	}

@@ -197,37 +197,6 @@ func (q *Queries) GetNetworks(ctx context.Context) ([]GetNetworksRow, error) {
 	return items, nil
 }
 
-const GetNotActiveRouters = `-- name: GetNotActiveRouters :many
-SELECT
-    r.id
-FROM
-    routers r
-WHERE r.status != 'ACTIVE'
-`
-
-func (q *Queries) GetNotActiveRouters(ctx context.Context) ([]string, error) {
-	rows, err := q.db.QueryContext(ctx, GetNotActiveRouters)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []string
-	for rows.Next() {
-		var id string
-		if err := rows.Scan(&id); err != nil {
-			return nil, err
-		}
-		items = append(items, id)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const GetPorts = `-- name: GetPorts :many
 SELECT
     p.id,

@@ -17,26 +17,28 @@ var (
 )
 
 type NetworkingCollector struct {
-	db                     *sql.DB
-	logger                 *slog.Logger
-	networkCollector       *NetworkCollector
-	floatingIPCollector    *FloatingIPCollector
-	routerCollector        *RouterCollector
-	portCollector          *PortCollector
-	securityGroupCollector *SecurityGroupCollector
-	subnetCollector        *SubnetCollector
+	db                                *sql.DB
+	logger                            *slog.Logger
+	networkCollector                  *NetworkCollector
+	floatingIPCollector               *FloatingIPCollector
+	routerCollector                   *RouterCollector
+	portCollector                     *PortCollector
+	securityGroupCollector            *SecurityGroupCollector
+	subnetCollector                   *SubnetCollector
+	haRouterAgentPortBindingCollector *HARouterAgentPortBindingCollector
 }
 
 func NewNetworkingCollector(db *sql.DB, logger *slog.Logger) *NetworkingCollector {
 	return &NetworkingCollector{
-		db:                     db,
-		logger:                 logger,
-		networkCollector:       NewNetworkCollector(db, logger),
-		floatingIPCollector:    NewFloatingIPCollector(db, logger),
-		routerCollector:        NewRouterCollector(db, logger),
-		portCollector:          NewPortCollector(db, logger),
-		securityGroupCollector: NewSecurityGroupCollector(db, logger),
-		subnetCollector:        NewSubnetCollector(db, logger),
+		db:                                db,
+		logger:                            logger,
+		networkCollector:                  NewNetworkCollector(db, logger),
+		floatingIPCollector:               NewFloatingIPCollector(db, logger),
+		routerCollector:                   NewRouterCollector(db, logger),
+		portCollector:                     NewPortCollector(db, logger),
+		securityGroupCollector:            NewSecurityGroupCollector(db, logger),
+		subnetCollector:                   NewSubnetCollector(db, logger),
+		haRouterAgentPortBindingCollector: NewHARouterAgentPortBindingCollector(db, logger),
 	}
 }
 
@@ -48,6 +50,7 @@ func (c *NetworkingCollector) Describe(ch chan<- *prometheus.Desc) {
 	c.portCollector.Describe(ch)
 	c.securityGroupCollector.Describe(ch)
 	c.subnetCollector.Describe(ch)
+	c.haRouterAgentPortBindingCollector.Describe(ch)
 }
 
 func (c *NetworkingCollector) Collect(ch chan<- prometheus.Metric) {
@@ -71,6 +74,9 @@ func (c *NetworkingCollector) Collect(ch chan<- prometheus.Metric) {
 		hasError = true
 	}
 	if err := c.subnetCollector.Collect(ch); err != nil {
+		hasError = true
+	}
+	if err := c.haRouterAgentPortBindingCollector.Collect(ch); err != nil {
 		hasError = true
 	}
 

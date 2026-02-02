@@ -130,6 +130,7 @@ func NewRouterCollector(db *sql.DB, logger *slog.Logger) *RouterCollector {
 func (c *RouterCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- routerDesc
 	ch <- routersDesc
+	ch <- notActiveRoutersDesc
 }
 
 func (c *RouterCollector) Collect(ch chan<- prometheus.Metric) error {
@@ -141,6 +142,8 @@ func (c *RouterCollector) Collect(ch chan<- prometheus.Metric) error {
 		return err
 	}
 
+	naRouters := 0
+
 	ch <- prometheus.MustNewConstMetric(
 		routersDesc,
 		prometheus.GaugeValue,
@@ -148,6 +151,9 @@ func (c *RouterCollector) Collect(ch chan<- prometheus.Metric) error {
 	)
 
 	for _, router := range routers {
+		if router.Status.String != "ACTIVE" {
+			naRouters += 1
+		}
 		ch <- prometheus.MustNewConstMetric(
 			routerDesc,
 			prometheus.GaugeValue,
@@ -160,16 +166,11 @@ func (c *RouterCollector) Collect(ch chan<- prometheus.Metric) error {
 			router.GwPortID.String,
 		)
 	}
-	naRouters, err := c.queries.GetNotActiveRouters(ctx)
-	if err != nil {
-		c.logger.Error("failed to query", "error", err)
-		return err
-	}
 
 	ch <- prometheus.MustNewConstMetric(
 		notActiveRoutersDesc,
 		prometheus.GaugeValue,
-		float64(len(naRouters)),
+		float64(naRouters),
 	)
 	return nil
 

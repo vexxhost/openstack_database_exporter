@@ -21,13 +21,6 @@ SELECT
 FROM
     routers r;
 
--- name: GetNotActiveRouters :many
-SELECT
-    r.id
-FROM
-    routers r
-WHERE r.status != 'ACTIVE';
-
 -- name: GetFloatingIPs :many
 SELECT
     fip.id,
