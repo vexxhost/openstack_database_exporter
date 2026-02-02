@@ -66,6 +66,8 @@ func (c *FloatingIPCollector) Describe(ch chan<- *prometheus.Desc) {
 func (c *FloatingIPCollector) Collect(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
 
+	anaFips := 0
+
 	fips, err := c.queries.GetFloatingIPs(ctx)
 	if err != nil {
 		c.logger.Error("failed to query", "error", err)
@@ -78,6 +80,10 @@ func (c *FloatingIPCollector) Collect(ch chan<- prometheus.Metric) error {
 	)
 
 	for _, fip := range fips {
+		if fip.FixedIpAddress.Valid && fip.Status.String != "ACTIVE" {
+			anaFips += 1
+		}
+
 		ch <- prometheus.MustNewConstMetric(
 			floatingIPDesc,
 			prometheus.GaugeValue,
@@ -91,15 +97,10 @@ func (c *FloatingIPCollector) Collect(ch chan<- prometheus.Metric) error {
 		)
 	}
 
-	anaFips, err := c.queries.GetFloatingIPAssociatedNotActive(ctx)
-	if err != nil {
-		c.logger.Error("failed to query", "error", err)
-		return err
-	}
 	ch <- prometheus.MustNewConstMetric(
 		floatingsIPsAssociatedNotActive,
 		prometheus.GaugeValue,
-		float64(len(anaFips)),
+		float64(anaFips),
 	)
 	return nil
 }

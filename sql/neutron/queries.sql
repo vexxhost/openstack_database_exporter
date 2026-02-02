@@ -35,18 +35,10 @@ SELECT
     fip.floating_network_id,
     fip.project_id,
     fip.router_id,
-    fip.status
+    fip.status,
+    fip.fixed_ip_address
 FROM
     floatingips fip;
-
--- name: GetFloatingIPAssociatedNotActive :many
-SELECT
-    fip.id
-FROM
-    floatingips fip
-WHERE
-    fip.fixed_ip_address IS NOT NULL
-    AND fip.status != 'ACTIVE';
 
 -- name: GetNetworks :many
 SELECT

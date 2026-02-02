@@ -10,39 +10,6 @@ import (
 	"database/sql"
 )
 
-const GetFloatingIPAssociatedNotActive = `-- name: GetFloatingIPAssociatedNotActive :many
-SELECT
-    fip.id
-FROM
-    floatingips fip
-WHERE
-    fip.fixed_ip_address IS NOT NULL
-    AND fip.status != 'ACTIVE'
-`
-
-func (q *Queries) GetFloatingIPAssociatedNotActive(ctx context.Context) ([]string, error) {
-	rows, err := q.db.QueryContext(ctx, GetFloatingIPAssociatedNotActive)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []string
-	for rows.Next() {
-		var id string
-		if err := rows.Scan(&id); err != nil {
-			return nil, err
-		}
-		items = append(items, id)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const GetFloatingIPs = `-- name: GetFloatingIPs :many
 SELECT
     fip.id,
@@ -50,7 +17,8 @@ SELECT
     fip.floating_network_id,
     fip.project_id,
     fip.router_id,
-    fip.status
+    fip.status,
+    fip.fixed_ip_address
 FROM
     floatingips fip
 `
@@ -62,6 +30,7 @@ type GetFloatingIPsRow struct {
 	ProjectID         sql.NullString
 	RouterID          sql.NullString
 	Status            sql.NullString
+	FixedIpAddress    sql.NullString
 }
 
 func (q *Queries) GetFloatingIPs(ctx context.Context) ([]GetFloatingIPsRow, error) {
@@ -80,6 +49,7 @@ func (q *Queries) GetFloatingIPs(ctx context.Context) ([]GetFloatingIPsRow, erro
 			&i.ProjectID,
 			&i.RouterID,
 			&i.Status,
+			&i.FixedIpAddress,
 		); err != nil {
 			return nil, err
 		}
