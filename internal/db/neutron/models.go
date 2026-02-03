@@ -277,3 +277,24 @@ type Subnet struct {
 	StandardAttrID  int64
 	SegmentID       sql.NullString
 }
+
+type Subnetpool struct {
+	ProjectID        sql.NullString
+	ID               string
+	Name             sql.NullString
+	IpVersion        int32
+	DefaultPrefixlen int32
+	MinPrefixlen     int32
+	MaxPrefixlen     int32
+	Shared           bool
+	DefaultQuota     sql.NullInt32
+	Hash             string
+	AddressScopeID   sql.NullString
+	IsDefault        bool
+	StandardAttrID   int64
+}
+
+type Subnetpoolprefix struct {
+	Cidr         string
+	SubnetpoolID string
+}

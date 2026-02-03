@@ -74,7 +74,8 @@ SELECT
     s.network_id,
     s.project_id,
     s.enable_dhcp,
-    CAST(GROUP_CONCAT(d.address) as CHAR) as dns_nameservers
+    CAST(GROUP_CONCAT(d.address) as CHAR) as dns_nameservers,
+    s.subnetpool_id
 FROM
     subnets s
     LEFT JOIN dnsnameservers d on s.id = d.subnet_id
@@ -133,3 +134,23 @@ FROM
 GROUP BY
     ipa.network_id,
     ipa.subnet_id;
+
+-- name: GetSubnetPools :many
+SELECT
+    sp.id,
+    sp.ip_version,
+    sp.max_prefixlen,
+    sp.min_prefixlen,
+    sp.default_prefixlen,
+    sp.project_id,
+    sp.name,
+    CAST(GROUP_CONCAT(spp.cidr) as CHAR) as prefixes
+FROM 
+    subnetpools sp
+    LEFT JOIN subnetpoolprefixes spp on sp.id = spp.subnetpool_id
+GROUP BY
+    sp.id,
+    sp.ip_version,
+    sp.max_prefixlen,
+    sp.min_prefixlen,
+    sp.default_prefixlen;

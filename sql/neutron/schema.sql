@@ -153,3 +153,29 @@ CREATE TABLE `networkrbacs` (
         `action` varchar(255) NOT NULL,
 PRIMARY KEY (`id`)
 );
+
+CREATE TABLE 
+    `subnetpools` (
+        `project_id` varchar(255) DEFAULT NULL,
+        `id` varchar(36) NOT NULL,
+        `name` varchar(255) DEFAULT NULL,
+        `ip_version` int NOT NULL,
+        `default_prefixlen` int NOT NULL,
+        `min_prefixlen` int NOT NULL,
+        `max_prefixlen` int NOT NULL,
+        `shared` tinyint(1) NOT NULL DEFAULT '0',
+        `default_quota` int DEFAULT NULL,
+        `hash` varchar(36) NOT NULL DEFAULT '',
+        `address_scope_id` varchar(36) DEFAULT NULL,
+        `is_default` tinyint(1) NOT NULL DEFAULT '0',
+        `standard_attr_id` bigint NOT NULL,
+PRIMARY KEY (`id`)
+    );
+
+CREATE TABLE 
+    `subnetpoolprefixes` (
+        `cidr` varchar(64) NOT NULL,
+        `subnetpool_id` varchar(36) NOT NULL,
+        PRIMARY KEY (`cidr`,`subnetpool_id`),
+        KEY `subnetpool_id` (`subnetpool_id`)
+);

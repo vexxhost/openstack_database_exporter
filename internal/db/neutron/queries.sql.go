@@ -407,6 +407,70 @@ func (q *Queries) GetSecurityGroups(ctx context.Context) ([]string, error) {
 	return items, nil
 }
 
+const GetSubnetPools = `-- name: GetSubnetPools :many
+SELECT
+    sp.id,
+    sp.ip_version,
+    sp.max_prefixlen,
+    sp.min_prefixlen,
+    sp.default_prefixlen,
+    sp.project_id,
+    sp.name,
+    CAST(GROUP_CONCAT(spp.cidr) as CHAR) as prefixes
+FROM 
+    subnetpools sp
+    LEFT JOIN subnetpoolprefixes spp on sp.id = spp.subnetpool_id
+GROUP BY
+    sp.id,
+    sp.ip_version,
+    sp.max_prefixlen,
+    sp.min_prefixlen,
+    sp.default_prefixlen
+`
+
+type GetSubnetPoolsRow struct {
+	ID               string
+	IpVersion        int32
+	MaxPrefixlen     int32
+	MinPrefixlen     int32
+	DefaultPrefixlen int32
+	ProjectID        sql.NullString
+	Name             sql.NullString
+	Prefixes         interface{}
+}
+
+func (q *Queries) GetSubnetPools(ctx context.Context) ([]GetSubnetPoolsRow, error) {
+	rows, err := q.db.QueryContext(ctx, GetSubnetPools)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetSubnetPoolsRow
+	for rows.Next() {
+		var i GetSubnetPoolsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.IpVersion,
+			&i.MaxPrefixlen,
+			&i.MinPrefixlen,
+			&i.DefaultPrefixlen,
+			&i.ProjectID,
+			&i.Name,
+			&i.Prefixes,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetSubnets = `-- name: GetSubnets :many
 SELECT
     s.id,
@@ -415,7 +479,8 @@ SELECT
     s.network_id,
     s.project_id,
     s.enable_dhcp,
-    CAST(GROUP_CONCAT(d.address) as CHAR) as dns_nameservers
+    CAST(GROUP_CONCAT(d.address) as CHAR) as dns_nameservers,
+    s.subnetpool_id
 FROM
     subnets s
     LEFT JOIN dnsnameservers d on s.id = d.subnet_id
@@ -436,6 +501,7 @@ type GetSubnetsRow struct {
 	ProjectID      sql.NullString
 	EnableDhcp     sql.NullBool
 	DnsNameservers interface{}
+	SubnetpoolID   sql.NullString
 }
 
 func (q *Queries) GetSubnets(ctx context.Context) ([]GetSubnetsRow, error) {
@@ -455,6 +521,7 @@ func (q *Queries) GetSubnets(ctx context.Context) ([]GetSubnetsRow, error) {
 			&i.ProjectID,
 			&i.EnableDhcp,
 			&i.DnsNameservers,
+			&i.SubnetpoolID,
 		); err != nil {
 			return nil, err
 		}
