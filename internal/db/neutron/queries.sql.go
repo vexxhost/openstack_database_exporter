@@ -116,6 +116,68 @@ func (q *Queries) GetHARouterAgentPortBindingsWithAgents(ctx context.Context) ([
 	return items, nil
 }
 
+const GetNetworkIPAvailabilitiesUsed = `-- name: GetNetworkIPAvailabilitiesUsed :many
+SELECT
+    ipa.network_id,
+    ipa.subnet_id,
+    COUNT(*) as allocation_count,
+    s.name as subnet_name,
+    s.cidr,
+    s.ip_version,
+    s.project_id,
+    n.name as network_name
+FROM
+    ipallocations ipa
+    LEFT JOIN subnets s ON ipa.subnet_id = s.id
+    LEFT JOIN networks n on ipa.network_id = n.id
+GROUP BY
+    ipa.network_id,
+    ipa.subnet_id
+`
+
+type GetNetworkIPAvailabilitiesUsedRow struct {
+	NetworkID       string
+	SubnetID        string
+	AllocationCount int64
+	SubnetName      sql.NullString
+	Cidr            sql.NullString
+	IpVersion       sql.NullInt32
+	ProjectID       sql.NullString
+	NetworkName     sql.NullString
+}
+
+func (q *Queries) GetNetworkIPAvailabilitiesUsed(ctx context.Context) ([]GetNetworkIPAvailabilitiesUsedRow, error) {
+	rows, err := q.db.QueryContext(ctx, GetNetworkIPAvailabilitiesUsed)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetNetworkIPAvailabilitiesUsedRow
+	for rows.Next() {
+		var i GetNetworkIPAvailabilitiesUsedRow
+		if err := rows.Scan(
+			&i.NetworkID,
+			&i.SubnetID,
+			&i.AllocationCount,
+			&i.SubnetName,
+			&i.Cidr,
+			&i.IpVersion,
+			&i.ProjectID,
+			&i.NetworkName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetNetworks = `-- name: GetNetworks :many
 SELECT
     n.id,

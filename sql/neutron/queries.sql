@@ -115,3 +115,21 @@ SELECT
     s.id
 FROM
     securitygroups s;
+
+-- name: GetNetworkIPAvailabilitiesUsed :many
+SELECT
+    ipa.network_id,
+    ipa.subnet_id,
+    COUNT(*) as allocation_count,
+    s.name as subnet_name,
+    s.cidr,
+    s.ip_version,
+    s.project_id,
+    n.name as network_name
+FROM
+    ipallocations ipa
+    LEFT JOIN subnets s ON ipa.subnet_id = s.id
+    LEFT JOIN networks n on ipa.network_id = n.id
+GROUP BY
+    ipa.network_id,
+    ipa.subnet_id;

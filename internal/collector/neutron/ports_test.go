@@ -45,6 +45,12 @@ openstack_neutron_port{admin_state_up="true",binding_vif_type="unbound",device_o
 # HELP openstack_neutron_ports ports
 # TYPE openstack_neutron_ports gauge
 openstack_neutron_ports 1
+# HELP openstack_neutron_ports_lb_not_active ports_lb_not_active
+# TYPE openstack_neutron_ports_lb_not_active gauge
+openstack_neutron_ports_lb_not_active 0
+# HELP openstack_neutron_ports_no_ips ports_no_ips
+# TYPE openstack_neutron_ports_no_ips gauge
+openstack_neutron_ports_no_ips 0
 `,
 		},
 	}

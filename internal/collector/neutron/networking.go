@@ -26,6 +26,7 @@ type NetworkingCollector struct {
 	securityGroupCollector            *SecurityGroupCollector
 	subnetCollector                   *SubnetCollector
 	haRouterAgentPortBindingCollector *HARouterAgentPortBindingCollector
+	miscCollector                     *MiscCollector
 }
 
 func NewNetworkingCollector(db *sql.DB, logger *slog.Logger) *NetworkingCollector {
@@ -39,6 +40,7 @@ func NewNetworkingCollector(db *sql.DB, logger *slog.Logger) *NetworkingCollecto
 		securityGroupCollector:            NewSecurityGroupCollector(db, logger),
 		subnetCollector:                   NewSubnetCollector(db, logger),
 		haRouterAgentPortBindingCollector: NewHARouterAgentPortBindingCollector(db, logger),
+		miscCollector:                     NewMiscCollector(db, logger),
 	}
 }
 
@@ -51,6 +53,7 @@ func (c *NetworkingCollector) Describe(ch chan<- *prometheus.Desc) {
 	c.securityGroupCollector.Describe(ch)
 	c.subnetCollector.Describe(ch)
 	c.haRouterAgentPortBindingCollector.Describe(ch)
+	c.miscCollector.Describe(ch)
 }
 
 func (c *NetworkingCollector) Collect(ch chan<- prometheus.Metric) {
@@ -77,6 +80,9 @@ func (c *NetworkingCollector) Collect(ch chan<- prometheus.Metric) {
 		hasError = true
 	}
 	if err := c.haRouterAgentPortBindingCollector.Collect(ch); err != nil {
+		hasError = true
+	}
+	if err := c.miscCollector.Collect(ch); err != nil {
 		hasError = true
 	}
 
