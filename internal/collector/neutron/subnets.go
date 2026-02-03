@@ -167,6 +167,9 @@ func NewSubnetCollector(db *sql.DB, logger *slog.Logger) *SubnetCollector {
 func (c *SubnetCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- subnetDesc
 	ch <- subnetsDesc
+	ch <- subnetsTotalDesc
+	ch <- subnetsFreeDesc
+	ch <- subnetsUsedDesc
 }
 
 func (c *SubnetCollector) Collect(ch chan<- prometheus.Metric) error {

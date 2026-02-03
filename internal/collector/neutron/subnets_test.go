@@ -26,6 +26,7 @@ func TestSubnetCollector(t *testing.T) {
 					"project_id",
 					"enable_dhcp",
 					"dns_nameservers",
+					"subnetpool_id",
 				}).AddRow(
 					"fc9e37c2-a5fd-442a-8a94-79c8351b57f0",
 					"10.0.0.0/26",
@@ -34,8 +35,31 @@ func TestSubnetCollector(t *testing.T) {
 					"d6fbbee0aa214c20b984292531ce7bd0",
 					"true",
 					"",
+					"",
 				)
 				mock.ExpectQuery(regexp.QuoteMeta(neutrondb.GetSubnets)).WillReturnRows(rows)
+
+				poolRows := sqlmock.NewRows([]string{
+					"id",
+					"ip_version",
+					"max_prefixlen",
+					"min_prefixlen",
+					"default_prefixlen",
+					"project_id",
+					"name",
+					"prefixes",
+				}).AddRow(
+					"044ee702-b41d-4517-ac95-d0319579775b",
+					4,
+					32,
+					8,
+					26,
+					"8d652a8c66594b328c6a6bcf617aba5d",
+					"shared-default-subnetpool-v4",
+					"10.0.0.0/22",
+				)
+				mock.ExpectQuery(regexp.QuoteMeta(neutrondb.GetSubnetPools)).WillReturnRows(poolRows)
+
 			},
 			ExpectedMetrics: `# HELP openstack_neutron_subnet subnet
 # TYPE openstack_neutron_subnet gauge
@@ -43,6 +67,45 @@ openstack_neutron_subnet{cidr="10.0.0.0/26",dns_nameservers="",enable_dhcp="true
 # HELP openstack_neutron_subnets subnets
 # TYPE openstack_neutron_subnets gauge
 openstack_neutron_subnets 1
+# HELP openstack_neutron_subnets_free subnets_free
+# TYPE openstack_neutron_subnets_free gauge
+openstack_neutron_subnets_free{ip_version="4",prefix="10.0.0.0/22",prefix_length="22",project_id="8d652a8c66594b328c6a6bcf617aba5d",subnet_pool_id="044ee702-b41d-4517-ac95-d0319579775b",subnet_pool_name="shared-default-subnetpool-v4"} 1
+openstack_neutron_subnets_free{ip_version="4",prefix="10.0.0.0/22",prefix_length="23",project_id="8d652a8c66594b328c6a6bcf617aba5d",subnet_pool_id="044ee702-b41d-4517-ac95-d0319579775b",subnet_pool_name="shared-default-subnetpool-v4"} 2
+openstack_neutron_subnets_free{ip_version="4",prefix="10.0.0.0/22",prefix_length="24",project_id="8d652a8c66594b328c6a6bcf617aba5d",subnet_pool_id="044ee702-b41d-4517-ac95-d0319579775b",subnet_pool_name="shared-default-subnetpool-v4"} 4
+openstack_neutron_subnets_free{ip_version="4",prefix="10.0.0.0/22",prefix_length="25",project_id="8d652a8c66594b328c6a6bcf617aba5d",subnet_pool_id="044ee702-b41d-4517-ac95-d0319579775b",subnet_pool_name="shared-default-subnetpool-v4"} 8
+openstack_neutron_subnets_free{ip_version="4",prefix="10.0.0.0/22",prefix_length="26",project_id="8d652a8c66594b328c6a6bcf617aba5d",subnet_pool_id="044ee702-b41d-4517-ac95-d0319579775b",subnet_pool_name="shared-default-subnetpool-v4"} 16
+openstack_neutron_subnets_free{ip_version="4",prefix="10.0.0.0/22",prefix_length="27",project_id="8d652a8c66594b328c6a6bcf617aba5d",subnet_pool_id="044ee702-b41d-4517-ac95-d0319579775b",subnet_pool_name="shared-default-subnetpool-v4"} 32
+openstack_neutron_subnets_free{ip_version="4",prefix="10.0.0.0/22",prefix_length="28",project_id="8d652a8c66594b328c6a6bcf617aba5d",subnet_pool_id="044ee702-b41d-4517-ac95-d0319579775b",subnet_pool_name="shared-default-subnetpool-v4"} 64
+openstack_neutron_subnets_free{ip_version="4",prefix="10.0.0.0/22",prefix_length="29",project_id="8d652a8c66594b328c6a6bcf617aba5d",subnet_pool_id="044ee702-b41d-4517-ac95-d0319579775b",subnet_pool_name="shared-default-subnetpool-v4"} 128
+openstack_neutron_subnets_free{ip_version="4",prefix="10.0.0.0/22",prefix_length="30",project_id="8d652a8c66594b328c6a6bcf617aba5d",subnet_pool_id="044ee702-b41d-4517-ac95-d0319579775b",subnet_pool_name="shared-default-subnetpool-v4"} 256
+openstack_neutron_subnets_free{ip_version="4",prefix="10.0.0.0/22",prefix_length="31",project_id="8d652a8c66594b328c6a6bcf617aba5d",subnet_pool_id="044ee702-b41d-4517-ac95-d0319579775b",subnet_pool_name="shared-default-subnetpool-v4"} 512
+openstack_neutron_subnets_free{ip_version="4",prefix="10.0.0.0/22",prefix_length="32",project_id="8d652a8c66594b328c6a6bcf617aba5d",subnet_pool_id="044ee702-b41d-4517-ac95-d0319579775b",subnet_pool_name="shared-default-subnetpool-v4"} 1024
+# HELP openstack_neutron_subnets_total subnets_total
+# TYPE openstack_neutron_subnets_total gauge
+openstack_neutron_subnets_total{ip_version="4",prefix="10.0.0.0/22",prefix_length="22",project_id="8d652a8c66594b328c6a6bcf617aba5d",subnet_pool_id="044ee702-b41d-4517-ac95-d0319579775b",subnet_pool_name="shared-default-subnetpool-v4"} 1
+openstack_neutron_subnets_total{ip_version="4",prefix="10.0.0.0/22",prefix_length="23",project_id="8d652a8c66594b328c6a6bcf617aba5d",subnet_pool_id="044ee702-b41d-4517-ac95-d0319579775b",subnet_pool_name="shared-default-subnetpool-v4"} 2
+openstack_neutron_subnets_total{ip_version="4",prefix="10.0.0.0/22",prefix_length="24",project_id="8d652a8c66594b328c6a6bcf617aba5d",subnet_pool_id="044ee702-b41d-4517-ac95-d0319579775b",subnet_pool_name="shared-default-subnetpool-v4"} 4
+openstack_neutron_subnets_total{ip_version="4",prefix="10.0.0.0/22",prefix_length="25",project_id="8d652a8c66594b328c6a6bcf617aba5d",subnet_pool_id="044ee702-b41d-4517-ac95-d0319579775b",subnet_pool_name="shared-default-subnetpool-v4"} 8
+openstack_neutron_subnets_total{ip_version="4",prefix="10.0.0.0/22",prefix_length="26",project_id="8d652a8c66594b328c6a6bcf617aba5d",subnet_pool_id="044ee702-b41d-4517-ac95-d0319579775b",subnet_pool_name="shared-default-subnetpool-v4"} 16
+openstack_neutron_subnets_total{ip_version="4",prefix="10.0.0.0/22",prefix_length="27",project_id="8d652a8c66594b328c6a6bcf617aba5d",subnet_pool_id="044ee702-b41d-4517-ac95-d0319579775b",subnet_pool_name="shared-default-subnetpool-v4"} 32
+openstack_neutron_subnets_total{ip_version="4",prefix="10.0.0.0/22",prefix_length="28",project_id="8d652a8c66594b328c6a6bcf617aba5d",subnet_pool_id="044ee702-b41d-4517-ac95-d0319579775b",subnet_pool_name="shared-default-subnetpool-v4"} 64
+openstack_neutron_subnets_total{ip_version="4",prefix="10.0.0.0/22",prefix_length="29",project_id="8d652a8c66594b328c6a6bcf617aba5d",subnet_pool_id="044ee702-b41d-4517-ac95-d0319579775b",subnet_pool_name="shared-default-subnetpool-v4"} 128
+openstack_neutron_subnets_total{ip_version="4",prefix="10.0.0.0/22",prefix_length="30",project_id="8d652a8c66594b328c6a6bcf617aba5d",subnet_pool_id="044ee702-b41d-4517-ac95-d0319579775b",subnet_pool_name="shared-default-subnetpool-v4"} 256
+openstack_neutron_subnets_total{ip_version="4",prefix="10.0.0.0/22",prefix_length="31",project_id="8d652a8c66594b328c6a6bcf617aba5d",subnet_pool_id="044ee702-b41d-4517-ac95-d0319579775b",subnet_pool_name="shared-default-subnetpool-v4"} 512
+openstack_neutron_subnets_total{ip_version="4",prefix="10.0.0.0/22",prefix_length="32",project_id="8d652a8c66594b328c6a6bcf617aba5d",subnet_pool_id="044ee702-b41d-4517-ac95-d0319579775b",subnet_pool_name="shared-default-subnetpool-v4"} 1024
+# HELP openstack_neutron_subnets_used subnets_used
+# TYPE openstack_neutron_subnets_used gauge
+openstack_neutron_subnets_used{ip_version="4",prefix="10.0.0.0/22",prefix_length="22",project_id="8d652a8c66594b328c6a6bcf617aba5d",subnet_pool_id="044ee702-b41d-4517-ac95-d0319579775b",subnet_pool_name="shared-default-subnetpool-v4"} 0
+openstack_neutron_subnets_used{ip_version="4",prefix="10.0.0.0/22",prefix_length="23",project_id="8d652a8c66594b328c6a6bcf617aba5d",subnet_pool_id="044ee702-b41d-4517-ac95-d0319579775b",subnet_pool_name="shared-default-subnetpool-v4"} 0
+openstack_neutron_subnets_used{ip_version="4",prefix="10.0.0.0/22",prefix_length="24",project_id="8d652a8c66594b328c6a6bcf617aba5d",subnet_pool_id="044ee702-b41d-4517-ac95-d0319579775b",subnet_pool_name="shared-default-subnetpool-v4"} 0
+openstack_neutron_subnets_used{ip_version="4",prefix="10.0.0.0/22",prefix_length="25",project_id="8d652a8c66594b328c6a6bcf617aba5d",subnet_pool_id="044ee702-b41d-4517-ac95-d0319579775b",subnet_pool_name="shared-default-subnetpool-v4"} 0
+openstack_neutron_subnets_used{ip_version="4",prefix="10.0.0.0/22",prefix_length="26",project_id="8d652a8c66594b328c6a6bcf617aba5d",subnet_pool_id="044ee702-b41d-4517-ac95-d0319579775b",subnet_pool_name="shared-default-subnetpool-v4"} 0
+openstack_neutron_subnets_used{ip_version="4",prefix="10.0.0.0/22",prefix_length="27",project_id="8d652a8c66594b328c6a6bcf617aba5d",subnet_pool_id="044ee702-b41d-4517-ac95-d0319579775b",subnet_pool_name="shared-default-subnetpool-v4"} 0
+openstack_neutron_subnets_used{ip_version="4",prefix="10.0.0.0/22",prefix_length="28",project_id="8d652a8c66594b328c6a6bcf617aba5d",subnet_pool_id="044ee702-b41d-4517-ac95-d0319579775b",subnet_pool_name="shared-default-subnetpool-v4"} 0
+openstack_neutron_subnets_used{ip_version="4",prefix="10.0.0.0/22",prefix_length="29",project_id="8d652a8c66594b328c6a6bcf617aba5d",subnet_pool_id="044ee702-b41d-4517-ac95-d0319579775b",subnet_pool_name="shared-default-subnetpool-v4"} 0
+openstack_neutron_subnets_used{ip_version="4",prefix="10.0.0.0/22",prefix_length="30",project_id="8d652a8c66594b328c6a6bcf617aba5d",subnet_pool_id="044ee702-b41d-4517-ac95-d0319579775b",subnet_pool_name="shared-default-subnetpool-v4"} 0
+openstack_neutron_subnets_used{ip_version="4",prefix="10.0.0.0/22",prefix_length="31",project_id="8d652a8c66594b328c6a6bcf617aba5d",subnet_pool_id="044ee702-b41d-4517-ac95-d0319579775b",subnet_pool_name="shared-default-subnetpool-v4"} 0
+openstack_neutron_subnets_used{ip_version="4",prefix="10.0.0.0/22",prefix_length="32",project_id="8d652a8c66594b328c6a6bcf617aba5d",subnet_pool_id="044ee702-b41d-4517-ac95-d0319579775b",subnet_pool_name="shared-default-subnetpool-v4"} 0
 `,
 		},
 	}
