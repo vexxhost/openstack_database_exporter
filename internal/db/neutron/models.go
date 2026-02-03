@@ -186,6 +186,13 @@ type Ipallocation struct {
 	NetworkID string
 }
 
+type Ipallocationpool struct {
+	ID       string
+	SubnetID sql.NullString
+	FirstIp  string
+	LastIp   string
+}
+
 type Ml2PortBinding struct {
 	PortID     string
 	Host       string

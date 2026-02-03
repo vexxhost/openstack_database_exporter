@@ -116,34 +116,104 @@ func (q *Queries) GetHARouterAgentPortBindingsWithAgents(ctx context.Context) ([
 	return items, nil
 }
 
-const GetNetworkIPAvailabilitiesUsed = `-- name: GetNetworkIPAvailabilitiesUsed :many
+const GetNetworkIPAvailabilitiesTotal = `-- name: GetNetworkIPAvailabilitiesTotal :many
 SELECT
-    ipa.network_id,
-    ipa.subnet_id,
-    COUNT(*) as allocation_count,
-    s.name as subnet_name,
+    s.name AS subnet_name,
+    n.name AS network_name,
+    s.id   AS subnet_id,
+    n.id   AS network_id,
+    ap.first_ip,
+    ap.last_ip,
+    s.project_id,
+    s.cidr,
+    s.ip_version
+FROM subnets s
+JOIN networks n
+    ON s.network_id = n.id
+LEFT JOIN ipallocationpools ap
+    ON s.id = ap.subnet_id
+GROUP BY
+    s.id,
+    n.id,
+    s.project_id,
     s.cidr,
     s.ip_version,
-    s.project_id,
-    n.name as network_name
-FROM
-    ipallocations ipa
-    LEFT JOIN subnets s ON ipa.subnet_id = s.id
-    LEFT JOIN networks n on ipa.network_id = n.id
-GROUP BY
-    ipa.network_id,
-    ipa.subnet_id
+    s.name,
+    n.name,
+    ap.first_ip,
+    ap.last_ip
+`
+
+type GetNetworkIPAvailabilitiesTotalRow struct {
+	SubnetName  sql.NullString
+	NetworkName sql.NullString
+	SubnetID    string
+	NetworkID   string
+	FirstIp     sql.NullString
+	LastIp      sql.NullString
+	ProjectID   sql.NullString
+	Cidr        string
+	IpVersion   int32
+}
+
+func (q *Queries) GetNetworkIPAvailabilitiesTotal(ctx context.Context) ([]GetNetworkIPAvailabilitiesTotalRow, error) {
+	rows, err := q.db.QueryContext(ctx, GetNetworkIPAvailabilitiesTotal)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetNetworkIPAvailabilitiesTotalRow
+	for rows.Next() {
+		var i GetNetworkIPAvailabilitiesTotalRow
+		if err := rows.Scan(
+			&i.SubnetName,
+			&i.NetworkName,
+			&i.SubnetID,
+			&i.NetworkID,
+			&i.FirstIp,
+			&i.LastIp,
+			&i.ProjectID,
+			&i.Cidr,
+			&i.IpVersion,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetNetworkIPAvailabilitiesUsed = `-- name: GetNetworkIPAvailabilitiesUsed :many
+SELECT 
+	s.id AS subnet_id, 
+	s.name AS subnet_name, 
+	s.cidr, 
+	s.ip_version, 
+	s.project_id, 
+	n.id AS network_id, 
+	n.name AS network_name, 
+	COUNT(ipa.ip_address) AS allocation_count
+FROM subnets s 
+	LEFT JOIN ipallocations ipa ON ipa.subnet_id = s.id 
+	LEFT JOIN networks n ON s.network_id = n.id 
+GROUP BY s.id, n.id
 `
 
 type GetNetworkIPAvailabilitiesUsedRow struct {
-	NetworkID       string
 	SubnetID        string
-	AllocationCount int64
 	SubnetName      sql.NullString
-	Cidr            sql.NullString
-	IpVersion       sql.NullInt32
+	Cidr            string
+	IpVersion       int32
 	ProjectID       sql.NullString
+	NetworkID       sql.NullString
 	NetworkName     sql.NullString
+	AllocationCount int64
 }
 
 func (q *Queries) GetNetworkIPAvailabilitiesUsed(ctx context.Context) ([]GetNetworkIPAvailabilitiesUsedRow, error) {
@@ -156,14 +226,14 @@ func (q *Queries) GetNetworkIPAvailabilitiesUsed(ctx context.Context) ([]GetNetw
 	for rows.Next() {
 		var i GetNetworkIPAvailabilitiesUsedRow
 		if err := rows.Scan(
-			&i.NetworkID,
 			&i.SubnetID,
-			&i.AllocationCount,
 			&i.SubnetName,
 			&i.Cidr,
 			&i.IpVersion,
 			&i.ProjectID,
+			&i.NetworkID,
 			&i.NetworkName,
+			&i.AllocationCount,
 		); err != nil {
 			return nil, err
 		}

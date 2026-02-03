@@ -118,22 +118,19 @@ FROM
     securitygroups s;
 
 -- name: GetNetworkIPAvailabilitiesUsed :many
-SELECT
-    ipa.network_id,
-    ipa.subnet_id,
-    COUNT(*) as allocation_count,
-    s.name as subnet_name,
-    s.cidr,
-    s.ip_version,
-    s.project_id,
-    n.name as network_name
-FROM
-    ipallocations ipa
-    LEFT JOIN subnets s ON ipa.subnet_id = s.id
-    LEFT JOIN networks n on ipa.network_id = n.id
-GROUP BY
-    ipa.network_id,
-    ipa.subnet_id;
+SELECT 
+	s.id AS subnet_id, 
+	s.name AS subnet_name, 
+	s.cidr, 
+	s.ip_version, 
+	s.project_id, 
+	n.id AS network_id, 
+	n.name AS network_name, 
+	COUNT(ipa.ip_address) AS allocation_count
+FROM subnets s 
+	LEFT JOIN ipallocations ipa ON ipa.subnet_id = s.id 
+	LEFT JOIN networks n ON s.network_id = n.id 
+GROUP BY s.id, n.id;
 
 -- name: GetSubnetPools :many
 SELECT
@@ -154,3 +151,31 @@ GROUP BY
     sp.max_prefixlen,
     sp.min_prefixlen,
     sp.default_prefixlen;
+
+-- name: GetNetworkIPAvailabilitiesTotal :many
+SELECT
+    s.name AS subnet_name,
+    n.name AS network_name,
+    s.id   AS subnet_id,
+    n.id   AS network_id,
+    ap.first_ip,
+    ap.last_ip,
+    s.project_id,
+    s.cidr,
+    s.ip_version
+FROM subnets s
+JOIN networks n
+    ON s.network_id = n.id
+LEFT JOIN ipallocationpools ap
+    ON s.id = ap.subnet_id
+GROUP BY
+    s.id,
+    n.id,
+    s.project_id,
+    s.cidr,
+    s.ip_version,
+    s.name,
+    n.name,
+    ap.first_ip,
+    ap.last_ip;
+

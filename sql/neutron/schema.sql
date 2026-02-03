@@ -179,3 +179,12 @@ CREATE TABLE
         PRIMARY KEY (`cidr`,`subnetpool_id`),
         KEY `subnetpool_id` (`subnetpool_id`)
 );
+
+CREATE TABLE 
+    `ipallocationpools` (
+        `id` varchar(36) NOT NULL,
+        `subnet_id` varchar(36) DEFAULT NULL,
+        `first_ip` varchar(64) NOT NULL,
+        `last_ip` varchar(64) NOT NULL,
+        PRIMARY KEY (`id`)
+);
