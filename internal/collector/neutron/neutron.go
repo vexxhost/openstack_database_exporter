@@ -24,7 +24,6 @@ func RegisterCollectors(registry *prometheus.Registry, databaseURL string, logge
 		return
 	}
 
-	registry.MustRegister(NewHARouterAgentPortBindingCollector(conn, logger))
-
+	registry.MustRegister(NewNetworkingCollector(conn, logger))
 	logger.Info("Registered collectors", "service", "neutron")
 }

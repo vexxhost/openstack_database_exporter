@@ -10,6 +10,60 @@ import (
 	"database/sql"
 )
 
+const GetFloatingIPs = `-- name: GetFloatingIPs :many
+SELECT
+    fip.id,
+    fip.floating_ip_address,
+    fip.floating_network_id,
+    fip.project_id,
+    fip.router_id,
+    fip.status,
+    fip.fixed_ip_address
+FROM
+    floatingips fip
+`
+
+type GetFloatingIPsRow struct {
+	ID                string
+	FloatingIpAddress string
+	FloatingNetworkID string
+	ProjectID         sql.NullString
+	RouterID          sql.NullString
+	Status            sql.NullString
+	FixedIpAddress    sql.NullString
+}
+
+func (q *Queries) GetFloatingIPs(ctx context.Context) ([]GetFloatingIPsRow, error) {
+	rows, err := q.db.QueryContext(ctx, GetFloatingIPs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetFloatingIPsRow
+	for rows.Next() {
+		var i GetFloatingIPsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.FloatingIpAddress,
+			&i.FloatingNetworkID,
+			&i.ProjectID,
+			&i.RouterID,
+			&i.Status,
+			&i.FixedIpAddress,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetHARouterAgentPortBindingsWithAgents = `-- name: GetHARouterAgentPortBindingsWithAgents :many
 SELECT
     ha.router_id,
@@ -48,6 +102,496 @@ func (q *Queries) GetHARouterAgentPortBindingsWithAgents(ctx context.Context) ([
 			&i.AgentHost,
 			&i.AgentAdminStateUp,
 			&i.AgentHeartbeatTimestamp,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetNetworkIPAvailabilitiesTotal = `-- name: GetNetworkIPAvailabilitiesTotal :many
+SELECT
+    s.name AS subnet_name,
+    n.name AS network_name,
+    s.id   AS subnet_id,
+    n.id   AS network_id,
+    ap.first_ip,
+    ap.last_ip,
+    s.project_id,
+    s.cidr,
+    s.ip_version
+FROM subnets s
+JOIN networks n
+    ON s.network_id = n.id
+LEFT JOIN ipallocationpools ap
+    ON s.id = ap.subnet_id
+GROUP BY
+    s.id,
+    n.id,
+    s.project_id,
+    s.cidr,
+    s.ip_version,
+    s.name,
+    n.name,
+    ap.first_ip,
+    ap.last_ip
+`
+
+type GetNetworkIPAvailabilitiesTotalRow struct {
+	SubnetName  sql.NullString
+	NetworkName sql.NullString
+	SubnetID    string
+	NetworkID   string
+	FirstIp     sql.NullString
+	LastIp      sql.NullString
+	ProjectID   sql.NullString
+	Cidr        string
+	IpVersion   int32
+}
+
+func (q *Queries) GetNetworkIPAvailabilitiesTotal(ctx context.Context) ([]GetNetworkIPAvailabilitiesTotalRow, error) {
+	rows, err := q.db.QueryContext(ctx, GetNetworkIPAvailabilitiesTotal)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetNetworkIPAvailabilitiesTotalRow
+	for rows.Next() {
+		var i GetNetworkIPAvailabilitiesTotalRow
+		if err := rows.Scan(
+			&i.SubnetName,
+			&i.NetworkName,
+			&i.SubnetID,
+			&i.NetworkID,
+			&i.FirstIp,
+			&i.LastIp,
+			&i.ProjectID,
+			&i.Cidr,
+			&i.IpVersion,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetNetworkIPAvailabilitiesUsed = `-- name: GetNetworkIPAvailabilitiesUsed :many
+SELECT 
+	s.id AS subnet_id, 
+	s.name AS subnet_name, 
+	s.cidr, 
+	s.ip_version, 
+	s.project_id, 
+	n.id AS network_id, 
+	n.name AS network_name, 
+	COUNT(ipa.ip_address) AS allocation_count
+FROM subnets s 
+	LEFT JOIN ipallocations ipa ON ipa.subnet_id = s.id 
+	LEFT JOIN networks n ON s.network_id = n.id 
+GROUP BY s.id, n.id
+`
+
+type GetNetworkIPAvailabilitiesUsedRow struct {
+	SubnetID        string
+	SubnetName      sql.NullString
+	Cidr            string
+	IpVersion       int32
+	ProjectID       sql.NullString
+	NetworkID       sql.NullString
+	NetworkName     sql.NullString
+	AllocationCount int64
+}
+
+func (q *Queries) GetNetworkIPAvailabilitiesUsed(ctx context.Context) ([]GetNetworkIPAvailabilitiesUsedRow, error) {
+	rows, err := q.db.QueryContext(ctx, GetNetworkIPAvailabilitiesUsed)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetNetworkIPAvailabilitiesUsedRow
+	for rows.Next() {
+		var i GetNetworkIPAvailabilitiesUsedRow
+		if err := rows.Scan(
+			&i.SubnetID,
+			&i.SubnetName,
+			&i.Cidr,
+			&i.IpVersion,
+			&i.ProjectID,
+			&i.NetworkID,
+			&i.NetworkName,
+			&i.AllocationCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetNetworks = `-- name: GetNetworks :many
+SELECT
+    n.id,
+    n.name,
+    n.project_id,
+    n.status,
+    ns.network_type as provider_network_type,
+    ns.physical_network as provider_physical_network,
+    ns.segmentation_id as provider_segmentation_id,
+    CAST(GROUP_CONCAT(s.id) as CHAR) as subnets,
+    CASE
+        WHEN en.network_id IS NOT NULL THEN TRUE
+        ELSE FALSE
+    END AS is_external,
+    CASE
+        WHEN rbacs.object_id IS NOT NULL THEN TRUE
+        ELSE FALSE
+    END AS is_shared
+FROM
+    networks n
+    LEFT JOIN networksegments ns ON n.id = ns.network_id
+    LEFT JOIN subnets s on n.id = s.network_id
+    LEFT JOIN externalnetworks en on n.id = en.network_id
+    LEFT JOIN networkrbacs rbacs on n.id = rbacs.object_id
+GROUP BY
+    n.id,
+    n.name,
+    n.project_id,
+    n.status,
+    ns.network_type,
+    ns.physical_network,
+    ns.segmentation_id
+`
+
+type GetNetworksRow struct {
+	ID                      string
+	Name                    sql.NullString
+	ProjectID               sql.NullString
+	Status                  sql.NullString
+	ProviderNetworkType     sql.NullString
+	ProviderPhysicalNetwork sql.NullString
+	ProviderSegmentationID  sql.NullInt32
+	Subnets                 interface{}
+	IsExternal              int32
+	IsShared                int32
+}
+
+func (q *Queries) GetNetworks(ctx context.Context) ([]GetNetworksRow, error) {
+	rows, err := q.db.QueryContext(ctx, GetNetworks)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetNetworksRow
+	for rows.Next() {
+		var i GetNetworksRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.ProjectID,
+			&i.Status,
+			&i.ProviderNetworkType,
+			&i.ProviderPhysicalNetwork,
+			&i.ProviderSegmentationID,
+			&i.Subnets,
+			&i.IsExternal,
+			&i.IsShared,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetPorts = `-- name: GetPorts :many
+SELECT
+    p.id,
+    p.mac_address,
+    p.device_owner,
+    p.status,
+    p.network_id,
+    p.admin_state_up,
+    b.vif_type as binding_vif_type,
+    CAST(GROUP_CONCAT(ia.ip_address) as CHAR) as fixed_ips
+FROM
+    ports p
+    LEFT JOIN ml2_port_bindings b ON p.id = b.port_id
+    LEFT JOIN ipallocations ia on p.id = ia.port_id
+GROUP BY
+    p.id,
+    p.mac_address,
+    p.device_owner,
+    p.status,
+    p.network_id,
+    p.admin_state_up,
+    b.vif_type
+`
+
+type GetPortsRow struct {
+	ID             string
+	MacAddress     string
+	DeviceOwner    string
+	Status         string
+	NetworkID      string
+	AdminStateUp   bool
+	BindingVifType sql.NullString
+	FixedIps       interface{}
+}
+
+func (q *Queries) GetPorts(ctx context.Context) ([]GetPortsRow, error) {
+	rows, err := q.db.QueryContext(ctx, GetPorts)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetPortsRow
+	for rows.Next() {
+		var i GetPortsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.MacAddress,
+			&i.DeviceOwner,
+			&i.Status,
+			&i.NetworkID,
+			&i.AdminStateUp,
+			&i.BindingVifType,
+			&i.FixedIps,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetRouters = `-- name: GetRouters :many
+SELECT
+    r.id,
+    r.name,
+    r.status,
+    r.admin_state_up,
+    r.project_id,
+    r.gw_port_id
+FROM
+    routers r
+`
+
+type GetRoutersRow struct {
+	ID           string
+	Name         sql.NullString
+	Status       sql.NullString
+	AdminStateUp sql.NullBool
+	ProjectID    sql.NullString
+	GwPortID     sql.NullString
+}
+
+func (q *Queries) GetRouters(ctx context.Context) ([]GetRoutersRow, error) {
+	rows, err := q.db.QueryContext(ctx, GetRouters)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetRoutersRow
+	for rows.Next() {
+		var i GetRoutersRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Status,
+			&i.AdminStateUp,
+			&i.ProjectID,
+			&i.GwPortID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetSecurityGroups = `-- name: GetSecurityGroups :many
+SELECT
+    s.id
+FROM
+    securitygroups s
+`
+
+func (q *Queries) GetSecurityGroups(ctx context.Context) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, GetSecurityGroups)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetSubnetPools = `-- name: GetSubnetPools :many
+SELECT
+    sp.id,
+    sp.ip_version,
+    sp.max_prefixlen,
+    sp.min_prefixlen,
+    sp.default_prefixlen,
+    sp.project_id,
+    sp.name,
+    CAST(GROUP_CONCAT(spp.cidr) as CHAR) as prefixes
+FROM 
+    subnetpools sp
+    LEFT JOIN subnetpoolprefixes spp on sp.id = spp.subnetpool_id
+GROUP BY
+    sp.id,
+    sp.ip_version,
+    sp.max_prefixlen,
+    sp.min_prefixlen,
+    sp.default_prefixlen
+`
+
+type GetSubnetPoolsRow struct {
+	ID               string
+	IpVersion        int32
+	MaxPrefixlen     int32
+	MinPrefixlen     int32
+	DefaultPrefixlen int32
+	ProjectID        sql.NullString
+	Name             sql.NullString
+	Prefixes         interface{}
+}
+
+func (q *Queries) GetSubnetPools(ctx context.Context) ([]GetSubnetPoolsRow, error) {
+	rows, err := q.db.QueryContext(ctx, GetSubnetPools)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetSubnetPoolsRow
+	for rows.Next() {
+		var i GetSubnetPoolsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.IpVersion,
+			&i.MaxPrefixlen,
+			&i.MinPrefixlen,
+			&i.DefaultPrefixlen,
+			&i.ProjectID,
+			&i.Name,
+			&i.Prefixes,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetSubnets = `-- name: GetSubnets :many
+SELECT
+    s.id,
+    s.cidr,
+    s.gateway_ip,
+    s.network_id,
+    s.project_id,
+    s.enable_dhcp,
+    CAST(GROUP_CONCAT(d.address) as CHAR) as dns_nameservers,
+    s.subnetpool_id
+FROM
+    subnets s
+    LEFT JOIN dnsnameservers d on s.id = d.subnet_id
+GROUP BY
+    s.id,
+    s.cidr,
+    s.gateway_ip,
+    s.network_id,
+    s.project_id,
+    s.enable_dhcp
+`
+
+type GetSubnetsRow struct {
+	ID             string
+	Cidr           string
+	GatewayIp      sql.NullString
+	NetworkID      string
+	ProjectID      sql.NullString
+	EnableDhcp     sql.NullBool
+	DnsNameservers interface{}
+	SubnetpoolID   sql.NullString
+}
+
+func (q *Queries) GetSubnets(ctx context.Context) ([]GetSubnetsRow, error) {
+	rows, err := q.db.QueryContext(ctx, GetSubnets)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetSubnetsRow
+	for rows.Next() {
+		var i GetSubnetsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Cidr,
+			&i.GatewayIp,
+			&i.NetworkID,
+			&i.ProjectID,
+			&i.EnableDhcp,
+			&i.DnsNameservers,
+			&i.SubnetpoolID,
 		); err != nil {
 			return nil, err
 		}
