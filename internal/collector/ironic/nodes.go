@@ -9,9 +9,20 @@ import (
 	ironicdb "github.com/vexxhost/openstack_database_exporter/internal/db/ironic"
 )
 
+// maxLabelLength is the maximum length for free-form label values to prevent
+// unbounded cardinality and memory usage in Prometheus.
+const maxLabelLength = 128
+
+// truncateLabel truncates a string to maxLabelLength.
+func truncateLabel(s string) string {
+	if len(s) > maxLabelLength {
+		return s[:maxLabelLength]
+	}
+	return s
+}
+
 // NodesCollector collects metrics about Ironic nodes
 type NodesCollector struct {
-	db      *sql.DB
 	queries *ironicdb.Queries
 	logger  *slog.Logger
 
@@ -22,7 +33,6 @@ type NodesCollector struct {
 // NewNodesCollector creates a new NodesCollector
 func NewNodesCollector(db *sql.DB, logger *slog.Logger) *NodesCollector {
 	return &NodesCollector{
-		db:      db,
 		queries: ironicdb.New(db),
 		logger: logger.With(
 			"namespace", Namespace,
@@ -47,7 +57,7 @@ func (c *NodesCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.nodeMetric
 }
 
-// Collect implements prometheus.Collector
+// Collect queries the database and emits node metrics.
 func (c *NodesCollector) Collect(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
 
@@ -57,7 +67,17 @@ func (c *NodesCollector) Collect(ch chan<- prometheus.Metric) error {
 		return err
 	}
 
+	return c.CollectFromRows(ch, nodes)
+}
+
+// CollectFromRows emits node metrics from pre-fetched rows.
+func (c *NodesCollector) CollectFromRows(ch chan<- prometheus.Metric, nodes []ironicdb.GetNodeMetricsRow) error {
 	for _, node := range nodes {
+		// Skip nodes with empty UUID to avoid duplicate label sets
+		if !node.Uuid.Valid || node.Uuid.String == "" {
+			c.logger.Warn("skipping node with empty UUID")
+			continue
+		}
 		// Individual node status metric
 		maintenance := "false"
 		if node.Maintenance.Valid && node.Maintenance.Bool {
@@ -89,17 +109,14 @@ func (c *NodesCollector) Collect(ch chan<- prometheus.Metric) error {
 			retired = "true"
 		}
 
-		retiredReason := node.RetiredReason
+		retiredReason := truncateLabel(node.RetiredReason)
 
 		name := ""
 		if node.Name.Valid {
 			name = node.Name.String
 		}
 
-		nodeUUID := ""
-		if node.Uuid.Valid {
-			nodeUUID = node.Uuid.String
-		}
+		nodeUUID := node.Uuid.String
 
 		// Emit individual node metric
 		metric, err := prometheus.NewConstMetric(

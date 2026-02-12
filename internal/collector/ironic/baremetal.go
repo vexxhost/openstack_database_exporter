@@ -12,7 +12,6 @@ import (
 
 // BaremetalCollector is the umbrella collector for Ironic baremetal metrics
 type BaremetalCollector struct {
-	db      *sql.DB
 	queries *ironicdb.Queries
 	logger  *slog.Logger
 
@@ -26,7 +25,6 @@ type BaremetalCollector struct {
 // NewBaremetalCollector creates a new umbrella collector for Ironic baremetal service
 func NewBaremetalCollector(db *sql.DB, logger *slog.Logger) *BaremetalCollector {
 	return &BaremetalCollector{
-		db:      db,
 		queries: ironicdb.New(db),
 		logger: logger.With(
 			"namespace", Namespace,
@@ -55,32 +53,19 @@ func (c *BaremetalCollector) Describe(ch chan<- *prometheus.Desc) {
 // Collect implements prometheus.Collector
 func (c *BaremetalCollector) Collect(ch chan<- prometheus.Metric) {
 	ctx := context.Background()
-	up := float64(1)
 
-	// Test database connectivity by running a simple query
-	_, err := c.queries.GetNodeMetrics(ctx)
+	// Query node metrics once and reuse the result
+	nodes, err := c.queries.GetNodeMetrics(ctx)
 	if err != nil {
 		c.logger.Error("failed to query Ironic database", "error", err)
-		up = 0
+		ch <- prometheus.MustNewConstMetric(c.upMetric, prometheus.GaugeValue, 0)
+		return
 	}
 
-	// Emit up metric
-	upMetric, err := prometheus.NewConstMetric(
-		c.upMetric,
-		prometheus.GaugeValue,
-		up,
-	)
-	if err != nil {
-		c.logger.Error("failed to create up metric", "error", err)
-	} else {
-		ch <- upMetric
+	// Collect nodes metrics using the already-fetched data
+	if err := c.nodesCollector.CollectFromRows(ch, nodes); err != nil {
+		c.logger.Error("nodes collector failed", "error", err)
 	}
 
-	// Only collect from sub-collectors if we're up
-	if up == 1 {
-		// Collect nodes metrics
-		if err := c.nodesCollector.Collect(ch); err != nil {
-			c.logger.Error("nodes collector failed", "error", err)
-		}
-	}
+	ch <- prometheus.MustNewConstMetric(c.upMetric, prometheus.GaugeValue, 1)
 }
