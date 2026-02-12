@@ -17,14 +17,12 @@ var (
 )
 
 type OrchestrationCollector struct {
-	db              *sql.DB
 	logger          *slog.Logger
 	stacksCollector *StacksCollector
 }
 
 func NewOrchestrationCollector(db *sql.DB, logger *slog.Logger) *OrchestrationCollector {
 	return &OrchestrationCollector{
-		db:              db,
 		logger:          logger,
 		stacksCollector: NewStacksCollector(db, logger),
 	}

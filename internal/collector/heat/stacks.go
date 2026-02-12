@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"log/slog"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	heatdb "github.com/vexxhost/openstack_database_exporter/internal/db/heat"
@@ -44,6 +45,15 @@ var (
 		"CHECK_COMPLETE",
 	}
 
+	// stackStatusValueMap provides O(1) lookup for status -> index mapping.
+	stackStatusValueMap = func() map[string]int {
+		m := make(map[string]int, len(knownStackStatuses))
+		for idx, s := range knownStackStatuses {
+			m[s] = idx
+		}
+		return m
+	}()
+
 	stackStatusDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(Namespace, Subsystem, "stack_status"),
 		"stack_status",
@@ -75,14 +85,12 @@ var (
 )
 
 type StacksCollector struct {
-	db      *sql.DB
 	queries *heatdb.Queries
 	logger  *slog.Logger
 }
 
 func NewStacksCollector(db *sql.DB, logger *slog.Logger) *StacksCollector {
 	return &StacksCollector{
-		db:      db,
 		queries: heatdb.New(db),
 		logger: logger.With(
 			"namespace", Namespace,
@@ -99,7 +107,8 @@ func (c *StacksCollector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (c *StacksCollector) Collect(ch chan<- prometheus.Metric) error {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 
 	stacks, err := c.queries.GetStackMetrics(ctx)
 	if err != nil {
@@ -122,8 +131,10 @@ func (c *StacksCollector) Collect(ch chan<- prometheus.Metric) error {
 
 	// Individual stack status metrics and count status occurrences
 	for _, stack := range stacks {
-		// Count status occurrences
-		stackStatusCounter[stack.Status]++
+		// Count status occurrences only for known statuses
+		if _, ok := stackStatusCounter[stack.Status]; ok {
+			stackStatusCounter[stack.Status]++
+		}
 
 		// stack_status metric
 		statusValue := mapStackStatusValue(stack.Status)
@@ -139,12 +150,12 @@ func (c *StacksCollector) Collect(ch chan<- prometheus.Metric) error {
 		)
 	}
 
-	// Stack status counter metrics
-	for status, count := range stackStatusCounter {
+	// Stack status counter metrics in stable order
+	for _, status := range knownStackStatuses {
 		ch <- prometheus.MustNewConstMetric(
 			stackStatusCounterDesc,
 			prometheus.GaugeValue,
-			float64(count),
+			float64(stackStatusCounter[status]),
 			status,
 		)
 	}
@@ -153,10 +164,8 @@ func (c *StacksCollector) Collect(ch chan<- prometheus.Metric) error {
 }
 
 func mapStackStatusValue(status string) int {
-	for idx, s := range knownStackStatuses {
-		if status == s {
-			return idx
-		}
+	if v, ok := stackStatusValueMap[status]; ok {
+		return v
 	}
 	return -1
 }
