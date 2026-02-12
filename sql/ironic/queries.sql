@@ -10,5 +10,4 @@ SELECT
     retired,
     COALESCE(retired_reason, '') as retired_reason
 FROM nodes
-WHERE provision_state != 'deleted'
-ORDER BY created_at;
+WHERE provision_state IS NULL OR provision_state != 'deleted';

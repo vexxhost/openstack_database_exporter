@@ -57,7 +57,7 @@ func (c *NodesCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.nodeMetric
 }
 
-// Collect queries the database and emits node metrics.
+// Collect queries the database and collects node metrics into the provided channel.
 func (c *NodesCollector) Collect(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
 
@@ -75,7 +75,11 @@ func (c *NodesCollector) CollectFromRows(ch chan<- prometheus.Metric, nodes []ir
 	for _, node := range nodes {
 		// Skip nodes with empty UUID to avoid duplicate label sets
 		if !node.Uuid.Valid || node.Uuid.String == "" {
-			c.logger.Warn("skipping node with empty UUID")
+			nodeName := ""
+			if node.Name.Valid {
+				nodeName = node.Name.String
+			}
+			c.logger.Debug("skipping node with empty UUID", "name", nodeName)
 			continue
 		}
 		// Individual node status metric
