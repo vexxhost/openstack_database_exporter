@@ -7,7 +7,6 @@ package heat
 
 import (
 	"context"
-	"database/sql"
 )
 
 const GetStackMetrics = `-- name: GetStackMetrics :many
@@ -16,28 +15,17 @@ SELECT
     COALESCE(s.name, '') as name,
     COALESCE(s.status, '') as status,
     COALESCE(s.action, '') as action,
-    COALESCE(s.tenant, '') as tenant,
-    s.created_at,
-    s.updated_at,
-    s.deleted_at,
-    COALESCE(s.nested_depth, 0) as nested_depth,
-    COALESCE(s.disable_rollback, false) as disable_rollback
+    COALESCE(s.tenant, '') as tenant
 FROM stack s
 WHERE s.deleted_at IS NULL
-ORDER BY s.created_at DESC
 `
 
 type GetStackMetricsRow struct {
-	ID              string
-	Name            string
-	Status          string
-	Action          string
-	Tenant          string
-	CreatedAt       sql.NullTime
-	UpdatedAt       sql.NullTime
-	DeletedAt       sql.NullTime
-	NestedDepth     int32
-	DisableRollback bool
+	ID     string
+	Name   string
+	Status string
+	Action string
+	Tenant string
 }
 
 func (q *Queries) GetStackMetrics(ctx context.Context) ([]GetStackMetricsRow, error) {
@@ -55,11 +43,6 @@ func (q *Queries) GetStackMetrics(ctx context.Context) ([]GetStackMetricsRow, er
 			&i.Status,
 			&i.Action,
 			&i.Tenant,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.DeletedAt,
-			&i.NestedDepth,
-			&i.DisableRollback,
 		); err != nil {
 			return nil, err
 		}

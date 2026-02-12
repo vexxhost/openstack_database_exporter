@@ -23,7 +23,11 @@ type OrchestrationCollector struct {
 
 func NewOrchestrationCollector(db *sql.DB, logger *slog.Logger) *OrchestrationCollector {
 	return &OrchestrationCollector{
-		logger:          logger,
+		logger: logger.With(
+			"namespace", Namespace,
+			"subsystem", Subsystem,
+			"collector", "orchestration",
+		),
 		stacksCollector: NewStacksCollector(db, logger),
 	}
 }
@@ -38,7 +42,6 @@ func (c *OrchestrationCollector) Collect(ch chan<- prometheus.Metric) {
 
 	// Collect metrics from stacks collector and track errors
 	if err := c.stacksCollector.Collect(ch); err != nil {
-		c.logger.Error("stacks collector failed", "error", err)
 		hasError = true
 	}
 

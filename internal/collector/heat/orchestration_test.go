@@ -17,9 +17,9 @@ func TestOrchestrationCollector(t *testing.T) {
 			Name: "successful collection with stacks working",
 			SetupMock: func(mock sqlmock.Sqlmock) {
 				rows := sqlmock.NewRows([]string{
-					"id", "name", "status", "action", "tenant", "created_at", "updated_at", "deleted_at", "nested_depth", "disable_rollback",
+					"id", "name", "status", "action", "tenant",
 				}).AddRow(
-					"stack-1", "test-stack", "CREATE_COMPLETE", "CREATE", "project-1", nil, nil, nil, 0, false,
+					"stack-1", "test-stack", "CREATE_COMPLETE", "CREATE", "project-1",
 				)
 
 				mock.ExpectQuery(regexp.QuoteMeta(heatdb.GetStackMetrics)).WillReturnRows(rows)

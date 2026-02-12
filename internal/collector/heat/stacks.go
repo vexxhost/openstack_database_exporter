@@ -46,13 +46,40 @@ var (
 	}
 
 	// stackStatusValueMap provides O(1) lookup for status -> index mapping.
-	stackStatusValueMap = func() map[string]int {
-		m := make(map[string]int, len(knownStackStatuses))
-		for idx, s := range knownStackStatuses {
-			m[s] = idx
-		}
-		return m
-	}()
+	// Values are explicitly assigned to keep metric encodings stable even
+	// if knownStackStatuses is reordered or modified.
+	stackStatusValueMap = map[string]int{
+		"INIT_IN_PROGRESS":     0,
+		"INIT_FAILED":          1,
+		"INIT_COMPLETE":        2,
+		"CREATE_IN_PROGRESS":   3,
+		"CREATE_FAILED":        4,
+		"CREATE_COMPLETE":      5,
+		"DELETE_IN_PROGRESS":   6,
+		"DELETE_FAILED":        7,
+		"DELETE_COMPLETE":      8,
+		"UPDATE_IN_PROGRESS":   9,
+		"UPDATE_FAILED":        10,
+		"UPDATE_COMPLETE":      11,
+		"ROLLBACK_IN_PROGRESS": 12,
+		"ROLLBACK_FAILED":      13,
+		"ROLLBACK_COMPLETE":    14,
+		"SUSPEND_IN_PROGRESS":  15,
+		"SUSPEND_FAILED":       16,
+		"SUSPEND_COMPLETE":     17,
+		"RESUME_IN_PROGRESS":   18,
+		"RESUME_FAILED":        19,
+		"RESUME_COMPLETE":      20,
+		"ADOPT_IN_PROGRESS":    21,
+		"ADOPT_FAILED":         22,
+		"ADOPT_COMPLETE":       23,
+		"SNAPSHOT_IN_PROGRESS": 24,
+		"SNAPSHOT_FAILED":      25,
+		"SNAPSHOT_COMPLETE":    26,
+		"CHECK_IN_PROGRESS":    27,
+		"CHECK_FAILED":         28,
+		"CHECK_COMPLETE":       29,
+	}
 
 	stackStatusDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(Namespace, Subsystem, "stack_status"),
