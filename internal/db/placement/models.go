@@ -18,6 +18,17 @@ type Allocation struct {
 	UpdatedAt          sql.NullTime
 }
 
+type Consumer struct {
+	ID             int32
+	Uuid           string
+	ProjectID      int32
+	UserID         int32
+	Generation     int32
+	ConsumerTypeID sql.NullInt32
+	CreatedAt      sql.NullTime
+	UpdatedAt      sql.NullTime
+}
+
 type Inventory struct {
 	ID                 int32
 	ResourceProviderID int32
@@ -30,6 +41,13 @@ type Inventory struct {
 	AllocationRatio    string
 	CreatedAt          sql.NullTime
 	UpdatedAt          sql.NullTime
+}
+
+type Project struct {
+	ID         int32
+	ExternalID string
+	CreatedAt  sql.NullTime
+	UpdatedAt  sql.NullTime
 }
 
 type ResourceClass struct {
@@ -49,4 +67,11 @@ type ResourceProvider struct {
 	UpdatedAt        sql.NullTime
 	RootProviderID   int32
 	ParentProviderID sql.NullInt32
+}
+
+type User struct {
+	ID         int32
+	ExternalID string
+	CreatedAt  sql.NullTime
+	UpdatedAt  sql.NullTime
 }
