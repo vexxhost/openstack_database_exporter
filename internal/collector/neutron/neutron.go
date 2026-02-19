@@ -27,6 +27,7 @@ func RegisterCollectors(registry *prometheus.Registry, databaseURL string, proje
 		return
 	}
 
+	registry.MustRegister(NewAgentsCollector(conn, logger))
 	registry.MustRegister(NewHARouterAgentPortBindingCollector(conn, logger))
 	registry.MustRegister(NewFloatingIPCollector(conn, logger))
 	registry.MustRegister(NewNetworkCollector(conn, logger))

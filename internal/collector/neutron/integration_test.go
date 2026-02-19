@@ -20,6 +20,51 @@ func neutronDB(t *testing.T) *sql.DB {
 	return itest.NewMySQLContainer(t, "neutron", "../../../sql/neutron/schema.sql")
 }
 
+func TestIntegration_AgentsCollector(t *testing.T) {
+	itest.SkipIfNoDocker(t)
+
+	db := neutronDB(t)
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+
+	t.Run("empty database", func(t *testing.T) {
+		collector := NewAgentsCollector(db, logger)
+		count := testutil.CollectAndCount(collector)
+		if count != 0 {
+			t.Fatalf("expected 0 metrics for empty agents, got %d", count)
+		}
+	})
+
+	t.Run("with agents alive and dead", func(t *testing.T) {
+		now := time.Now().Format("2006-01-02 15:04:05")
+
+		itest.SeedSQL(t, db,
+			fmt.Sprintf("INSERT INTO agents (id, agent_type, `binary`, topic, host, admin_state_up, created_at, started_at, heartbeat_timestamp, configurations) VALUES"+
+				" ('ag-001', 'L3 agent', 'neutron-l3-agent', 'l3_agent', 'ctrl-01', 1, '%s', '%s', '%s', '{}')", now, now, now),
+			fmt.Sprintf("INSERT INTO agents (id, agent_type, `binary`, topic, host, admin_state_up, created_at, started_at, heartbeat_timestamp, configurations, availability_zone) VALUES"+
+				" ('ag-002', 'DHCP agent', 'neutron-dhcp-agent', 'dhcp_agent', 'ctrl-02', 0, '%s', '%s', DATE_SUB(NOW(), INTERVAL 5 MINUTE), '{}', 'nova')", now, now),
+		)
+
+		collector := NewAgentsCollector(db, logger)
+
+		count := testutil.CollectAndCount(collector, "openstack_neutron_agent_state")
+		if count != 2 {
+			t.Fatalf("expected 2 agent_state metrics, got %d", count)
+		}
+
+		// ag-001: alive (heartbeat is NOW), enabled
+		// ag-002: dead (heartbeat 5 min ago), disabled
+		expected := `# HELP openstack_neutron_agent_state agent_state
+# TYPE openstack_neutron_agent_state gauge
+openstack_neutron_agent_state{adminState="enabled",hostname="ctrl-01",id="ag-001",service="neutron-l3-agent",zone=""} 1
+openstack_neutron_agent_state{adminState="disabled",hostname="ctrl-02",id="ag-002",service="neutron-dhcp-agent",zone="nova"} 0
+`
+		err := testutil.CollectAndCompare(collector, strings.NewReader(expected), "openstack_neutron_agent_state")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+}
+
 func TestIntegration_HARouterAgentPortBindingCollector(t *testing.T) {
 	itest.SkipIfNoDocker(t)
 

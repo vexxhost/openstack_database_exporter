@@ -329,6 +329,7 @@ func TestIntegration_E2E_FullExporter(t *testing.T) {
 	assertMetricExists(t, families, "openstack_sharev2_share_status_counter")
 
 	// Neutron
+	assertMetricExists(t, families, "openstack_neutron_agent_state")
 	assertMetricExists(t, families, "openstack_neutron_l3_agent_of_router")
 	assertGaugeValue(t, families, "openstack_neutron_floating_ips", 1)
 	assertMetricExists(t, families, "openstack_neutron_floating_ip")

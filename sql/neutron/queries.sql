@@ -1,3 +1,21 @@
+-- name: GetAgents :many
+SELECT
+    a.id,
+    a.agent_type,
+    a.`binary` as service,
+    a.host as hostname,
+    CASE
+        WHEN a.admin_state_up = 1 THEN 'enabled'
+        ELSE 'disabled'
+    END as admin_state,
+    a.availability_zone as zone,
+    CASE
+        WHEN TIMESTAMPDIFF(SECOND, a.heartbeat_timestamp, NOW()) <= 75 THEN 1
+        ELSE 0
+    END as alive
+FROM
+    agents a;
+
 -- name: GetHARouterAgentPortBindingsWithAgents :many
 SELECT
     ha.router_id,
