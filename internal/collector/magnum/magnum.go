@@ -5,6 +5,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/vexxhost/openstack_database_exporter/internal/db"
+	"github.com/vexxhost/openstack_database_exporter/internal/util"
 )
 
 const (
@@ -21,12 +22,11 @@ func RegisterCollectors(registry *prometheus.Registry, databaseURL string, logge
 	conn, err := db.Connect(databaseURL)
 	if err != nil {
 		logger.Error("Failed to connect to database", "service", "magnum", "error", err)
+		registry.MustRegister(util.NewDownCollector(Namespace, Subsystem))
 		return
 	}
 
-	registry.MustRegister(NewClustersCollector(conn, logger))
-	registry.MustRegister(NewMastersCollector(conn, logger))
-	registry.MustRegister(NewNodesCollector(conn, logger))
+	registry.MustRegister(NewContainerInfraCollector(conn, logger))
 
 	logger.Info("Registered collectors", "service", "magnum")
 }

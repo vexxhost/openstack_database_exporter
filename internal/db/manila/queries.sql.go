@@ -18,6 +18,7 @@ SELECT
     s.size,
     s.share_proto,
     si.status,
+    COALESCE(si.share_type_id, '') as share_type,
     COALESCE(st.name, '') as share_type_name,
     COALESCE(az.name, '') as availability_zone
 FROM shares s
@@ -35,6 +36,7 @@ type GetShareMetricsRow struct {
 	Size             sql.NullInt32
 	ShareProto       sql.NullString
 	Status           sql.NullString
+	ShareType        string
 	ShareTypeName    string
 	AvailabilityZone string
 }
@@ -57,6 +59,7 @@ func (q *Queries) GetShareMetrics(ctx context.Context) ([]GetShareMetricsRow, er
 			&i.Size,
 			&i.ShareProto,
 			&i.Status,
+			&i.ShareType,
 			&i.ShareTypeName,
 			&i.AvailabilityZone,
 		); err != nil {

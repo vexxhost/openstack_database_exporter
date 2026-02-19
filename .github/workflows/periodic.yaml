@@ -14,4 +14,4 @@ jobs:
     steps:
       - uses: vexxhost/github-actions/scan-image@main
         with:
-          image-ref: ghcr.io/${{ github.repository_owner }}/ubuntu:edge
+          image-ref: ghcr.io/${{ github.repository_owner }}/openstack-database-exporter:edge

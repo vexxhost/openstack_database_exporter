@@ -24,15 +24,26 @@ FROM
     amphora
 `
 
-func (q *Queries) GetAllAmphora(ctx context.Context) ([]Amphora, error) {
+type GetAllAmphoraRow struct {
+	ID             string
+	ComputeID      sql.NullString
+	Status         string
+	LoadBalancerID sql.NullString
+	LbNetworkIp    sql.NullString
+	HaIp           sql.NullString
+	Role           sql.NullString
+	CertExpiration sql.NullTime
+}
+
+func (q *Queries) GetAllAmphora(ctx context.Context) ([]GetAllAmphoraRow, error) {
 	rows, err := q.db.QueryContext(ctx, GetAllAmphora)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Amphora
+	var items []GetAllAmphoraRow
 	for rows.Next() {
-		var i Amphora
+		var i GetAllAmphoraRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.ComputeID,

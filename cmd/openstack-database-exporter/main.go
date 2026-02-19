@@ -31,6 +31,14 @@ var (
 		"glance.database-url",
 		"Glance database connection URL (oslo.db format)",
 	).Envar("GLANCE_DATABASE_URL").String()
+	heatDatabaseURL = kingpin.Flag(
+		"heat.database-url",
+		"Heat database connection URL (oslo.db format)",
+	).Envar("HEAT_DATABASE_URL").String()
+	ironicDatabaseURL = kingpin.Flag(
+		"ironic.database-url",
+		"Ironic database connection URL (oslo.db format)",
+	).Envar("IRONIC_DATABASE_URL").String()
 	keystoneDatabaseURL = kingpin.Flag(
 		"keystone.database-url",
 		"Keystone database connection URL (oslo.db format)",
@@ -55,6 +63,18 @@ var (
 		"placement.database-url",
 		"Placement database connection URL (oslo.db format)",
 	).Envar("PLACEMENT_DATABASE_URL").String()
+	novaDatabaseURL = kingpin.Flag(
+		"nova.database-url",
+		"Nova database connection URL (oslo.db format)",
+	).Envar("NOVA_DATABASE_URL").String()
+	novaAPIDatabaseURL = kingpin.Flag(
+		"nova-api.database-url",
+		"Nova API database connection URL (oslo.db format)",
+	).Envar("NOVA_API_DATABASE_URL").String()
+	projectCacheTTL = kingpin.Flag(
+		"project-cache-ttl",
+		"TTL for the keystone project name cache (default 5m).",
+	).Default("5m").Envar("PROJECT_CACHE_TTL").Duration()
 )
 
 func main() {
@@ -73,20 +93,26 @@ func main() {
 	reg := collector.NewRegistry(collector.Config{
 		CinderDatabaseURL:    *cinderDatabaseURL,
 		GlanceDatabaseURL:    *glanceDatabaseURL,
+		HeatDatabaseURL:      *heatDatabaseURL,
+		IronicDatabaseURL:    *ironicDatabaseURL,
 		KeystoneDatabaseURL:  *keystoneDatabaseURL,
 		MagnumDatabaseURL:    *magnumDatabaseURL,
 		ManilaDatabaseURL:    *manilaDatabaseURL,
 		NeutronDatabaseURL:   *neutronDatabaseURL,
 		OctaviaDatabaseURL:   *octaviaDatabaseURL,
 		PlacementDatabaseURL: *placementDatabaseURL,
+		NovaDatabaseURL:      *novaDatabaseURL,
+		NovaAPIDatabaseURL:   *novaAPIDatabaseURL,
+		ProjectCacheTTL:      *projectCacheTTL,
 	}, logger)
 
-	http.Handle(*metricsPath, promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg}))
+	http.Handle(*metricsPath, promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 	if *metricsPath != "/" && *metricsPath != "" {
 		landingPage, err := web.NewLandingPage(web.LandingConfig{
 			Name:        "OpenStack Database Exporter",
 			Description: "Prometheus Exporter for OpenStack Databases",
 			Version:     version.Info(),
+			Profiling:   "false",
 			Links: []web.LandingLinks{
 				{Address: *metricsPath, Text: "Metrics"},
 			},

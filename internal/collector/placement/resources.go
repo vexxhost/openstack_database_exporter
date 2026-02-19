@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"log/slog"
-	"strconv"
 
 	"github.com/prometheus/client_golang/prometheus"
 	placementdb "github.com/vexxhost/openstack_database_exporter/internal/db/placement"
@@ -105,27 +104,9 @@ func (c *ResourcesCollector) Collect(ch chan<- prometheus.Metric) {
 
 		resourceType := resource.ResourceType
 
-		// Convert allocation_ratio from string to float64
-		allocationRatio, err := strconv.ParseFloat(resource.AllocationRatio, 64)
-		if err != nil {
-			c.logger.Warn("Failed to parse allocation ratio", "value", resource.AllocationRatio, "error", err)
-			allocationRatio = 1.0 // default value
-		}
+		allocationRatio := resource.AllocationRatio
 
-		// Convert used from interface{} to int64 (mysql returns it as []uint8)
-		used := int64(0)
-		if resource.Used != nil {
-			switch v := resource.Used.(type) {
-			case int64:
-				used = v
-			case []uint8:
-				// MySQL returns large numbers as []uint8
-				usedStr := string(v)
-				if parsedUsed, err := strconv.ParseInt(usedStr, 10, 64); err == nil {
-					used = parsedUsed
-				}
-			}
-		}
+		used := resource.Used
 
 		ch <- prometheus.MustNewConstMetric(
 			resourceTotalDesc,

@@ -1,4 +1,3 @@
 .direnv
-/target
 result*
-openstack-database-exporter
+/openstack-database-exporter

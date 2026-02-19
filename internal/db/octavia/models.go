@@ -14,32 +14,69 @@ type Amphora struct {
 	Status         string
 	LoadBalancerID sql.NullString
 	LbNetworkIp    sql.NullString
+	VrrpIp         sql.NullString
 	HaIp           sql.NullString
+	VrrpPortID     sql.NullString
+	HaPortID       sql.NullString
 	Role           sql.NullString
 	CertExpiration sql.NullTime
+	CertBusy       bool
+	VrrpInterface  sql.NullString
+	VrrpID         sql.NullInt32
+	VrrpPriority   sql.NullInt32
+	CachedZone     sql.NullString
+	CreatedAt      sql.NullTime
+	UpdatedAt      sql.NullTime
+	ImageID        sql.NullString
+	ComputeFlavor  sql.NullString
 }
 
 type LoadBalancer struct {
 	ProjectID          sql.NullString
 	ID                 string
 	Name               sql.NullString
+	Description        sql.NullString
 	ProvisioningStatus string
 	OperatingStatus    string
+	Enabled            bool
+	Topology           sql.NullString
+	ServerGroupID      sql.NullString
+	CreatedAt          sql.NullTime
+	UpdatedAt          sql.NullTime
 	Provider           sql.NullString
+	FlavorID           sql.NullString
+	AvailabilityZone   sql.NullString
 }
 
 type Pool struct {
 	ProjectID          sql.NullString
 	ID                 string
 	Name               sql.NullString
+	Description        sql.NullString
 	Protocol           string
 	LbAlgorithm        string
 	OperatingStatus    string
+	Enabled            bool
 	LoadBalancerID     sql.NullString
+	CreatedAt          sql.NullTime
+	UpdatedAt          sql.NullTime
 	ProvisioningStatus string
+	TlsCertificateID   sql.NullString
+	CaTlsCertificateID sql.NullString
+	CrlContainerID     sql.NullString
+	TlsEnabled         bool
+	TlsCiphers         sql.NullString
+	TlsVersions        sql.NullString
+	AlpnProtocols      sql.NullString
 }
 
 type Vip struct {
 	LoadBalancerID string
 	IpAddress      sql.NullString
+	PortID         sql.NullString
+	SubnetID       sql.NullString
+	NetworkID      sql.NullString
+	QosPolicyID    sql.NullString
+	OctaviaOwned   sql.NullBool
+	VnicType       string
 }

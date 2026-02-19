@@ -10,6 +10,177 @@ import (
 	"database/sql"
 )
 
+const GetAllocationsByProject = `-- name: GetAllocationsByProject :many
+SELECT 
+    p.external_id as project_id,
+    rc.name as resource_type,
+    CAST(COALESCE(SUM(a.used), 0) AS SIGNED) as used
+FROM projects p
+LEFT JOIN consumers c ON p.id = c.project_id
+LEFT JOIN allocations a ON c.uuid = a.consumer_id
+LEFT JOIN resource_classes rc ON a.resource_class_id = rc.id
+WHERE rc.name IS NOT NULL
+GROUP BY p.external_id, rc.name
+ORDER BY p.external_id, rc.name
+`
+
+type GetAllocationsByProjectRow struct {
+	ProjectID    string
+	ResourceType sql.NullString
+	Used         int64
+}
+
+// Get resource usage by project for Nova quota calculations
+func (q *Queries) GetAllocationsByProject(ctx context.Context) ([]GetAllocationsByProjectRow, error) {
+	rows, err := q.db.QueryContext(ctx, GetAllocationsByProject)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetAllocationsByProjectRow
+	for rows.Next() {
+		var i GetAllocationsByProjectRow
+		if err := rows.Scan(&i.ProjectID, &i.ResourceType, &i.Used); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetConsumerCountByProject = `-- name: GetConsumerCountByProject :many
+SELECT 
+    p.external_id as project_id,
+    COUNT(DISTINCT c.uuid) as instance_count
+FROM projects p
+JOIN consumers c ON p.id = c.project_id
+GROUP BY p.external_id
+ORDER BY p.external_id
+`
+
+type GetConsumerCountByProjectRow struct {
+	ProjectID     string
+	InstanceCount int64
+}
+
+// Count instances (consumers) per project for Nova instance quota usage
+func (q *Queries) GetConsumerCountByProject(ctx context.Context) ([]GetConsumerCountByProjectRow, error) {
+	rows, err := q.db.QueryContext(ctx, GetConsumerCountByProject)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetConsumerCountByProjectRow
+	for rows.Next() {
+		var i GetConsumerCountByProjectRow
+		if err := rows.Scan(&i.ProjectID, &i.InstanceCount); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetConsumers = `-- name: GetConsumers :many
+SELECT 
+    c.id,
+    c.uuid,
+    c.generation,
+    p.external_id as project_id,
+    u.external_id as user_id
+FROM consumers c
+JOIN projects p ON c.project_id = p.id
+JOIN users u ON c.user_id = u.id
+ORDER BY c.created_at DESC
+`
+
+type GetConsumersRow struct {
+	ID         int32
+	Uuid       string
+	Generation int32
+	ProjectID  string
+	UserID     string
+}
+
+// Get consumer information for allocation tracking
+func (q *Queries) GetConsumers(ctx context.Context) ([]GetConsumersRow, error) {
+	rows, err := q.db.QueryContext(ctx, GetConsumers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetConsumersRow
+	for rows.Next() {
+		var i GetConsumersRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Uuid,
+			&i.Generation,
+			&i.ProjectID,
+			&i.UserID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetResourceClasses = `-- name: GetResourceClasses :many
+SELECT 
+    id,
+    name
+FROM resource_classes
+ORDER BY name
+`
+
+type GetResourceClassesRow struct {
+	ID   int32
+	Name string
+}
+
+// Get all resource classes for reference
+func (q *Queries) GetResourceClasses(ctx context.Context) ([]GetResourceClassesRow, error) {
+	rows, err := q.db.QueryContext(ctx, GetResourceClasses)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetResourceClassesRow
+	for rows.Next() {
+		var i GetResourceClassesRow
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetResourceMetrics = `-- name: GetResourceMetrics :many
 SELECT 
     rp.name as hostname,
@@ -17,7 +188,7 @@ SELECT
     i.total,
     i.allocation_ratio,
     i.reserved,
-    COALESCE(SUM(a.used), 0) as used
+    CAST(COALESCE(SUM(a.used), 0) AS SIGNED) as used
 FROM resource_providers rp
 JOIN inventories i ON rp.id = i.resource_provider_id
 JOIN resource_classes rc ON i.resource_class_id = rc.id
@@ -30,9 +201,9 @@ type GetResourceMetricsRow struct {
 	Hostname        sql.NullString
 	ResourceType    string
 	Total           int32
-	AllocationRatio string
+	AllocationRatio float64
 	Reserved        int32
-	Used            interface{}
+	Used            int64
 }
 
 // This is the main query that provides data for all four metrics:

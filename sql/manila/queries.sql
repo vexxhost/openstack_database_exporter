@@ -8,6 +8,7 @@ SELECT
     s.size,
     s.share_proto,
     si.status,
+    COALESCE(si.share_type_id, '') as share_type,
     COALESCE(st.name, '') as share_type_name,
     COALESCE(az.name, '') as availability_zone
 FROM shares s
