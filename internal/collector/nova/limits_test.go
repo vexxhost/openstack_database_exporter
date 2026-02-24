@@ -14,6 +14,11 @@ import (
 	"github.com/vexxhost/openstack_database_exporter/internal/testutil"
 )
 
+func expectGetQuotaClassDefaults(mock sqlmock.Sqlmock) {
+	rows := sqlmock.NewRows([]string{"resource", "hard_limit"})
+	mock.ExpectQuery(regexp.QuoteMeta(novaapidb.GetQuotaClassDefaults)).WillReturnRows(rows)
+}
+
 func TestLimitsCollector(t *testing.T) {
 	tests := []testutil.CollectorTestCase{
 		{
@@ -30,6 +35,7 @@ func TestLimitsCollector(t *testing.T) {
 					3, "project1", "ram", 51200,
 				)
 				mock.ExpectQuery(regexp.QuoteMeta(novaapidb.GetQuotas)).WillReturnRows(quotasRows)
+				expectGetQuotaClassDefaults(mock)
 
 				// Note: No placement query expected since placementDB is nil in tests
 			},
@@ -43,6 +49,7 @@ func TestLimitsCollector(t *testing.T) {
 					"id", "project_id", "resource", "hard_limit",
 				})
 				mock.ExpectQuery(regexp.QuoteMeta(novaapidb.GetQuotas)).WillReturnRows(quotasRows)
+				expectGetQuotaClassDefaults(mock)
 
 				// Note: No placement query expected since placementDB is nil in tests
 			},

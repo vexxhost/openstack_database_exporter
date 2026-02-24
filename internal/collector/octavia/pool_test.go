@@ -56,7 +56,7 @@ openstack_loadbalancer_total_pools 0
 			},
 			ExpectedMetrics: `# HELP openstack_loadbalancer_pool_status pool_status
 # TYPE openstack_loadbalancer_pool_status gauge
-openstack_loadbalancer_pool_status{id="pool-001",lb_algorithm="LEAST_CONNECTIONS",loadbalancers="",name="",operating_status="ONLINE",project_id="",protocol="HTTP",provisioning_status="PENDING_CREATE"} 3
+openstack_loadbalancer_pool_status{id="pool-001",lb_algorithm="LEAST_CONNECTIONS",loadbalancers="",name="",operating_status="ONLINE",project_id="",protocol="HTTP",provisioning_status="PENDING_CREATE"} 2
 # HELP openstack_loadbalancer_total_pools total_pools
 # TYPE openstack_loadbalancer_total_pools gauge
 openstack_loadbalancer_total_pools 1
@@ -67,26 +67,24 @@ openstack_loadbalancer_total_pools 1
 			SetupMock: func(mock sqlmock.Sqlmock) {
 				rows := sqlmock.NewRows(cols).
 					AddRow("p-1", nil, nil, "TCP", "ROUND_ROBIN", "ONLINE", nil, "ACTIVE").
-					AddRow("p-2", nil, nil, "TCP", "ROUND_ROBIN", "ONLINE", nil, "DELETED").
-					AddRow("p-3", nil, nil, "TCP", "ROUND_ROBIN", "ONLINE", nil, "ERROR").
-					AddRow("p-4", nil, nil, "TCP", "ROUND_ROBIN", "ONLINE", nil, "PENDING_CREATE").
-					AddRow("p-5", nil, nil, "TCP", "ROUND_ROBIN", "ONLINE", nil, "PENDING_UPDATE").
-					AddRow("p-6", nil, nil, "TCP", "ROUND_ROBIN", "ONLINE", nil, "PENDING_DELETE").
-					AddRow("p-7", nil, nil, "TCP", "ROUND_ROBIN", "ONLINE", nil, "UNKNOWN_PROV")
+					AddRow("p-2", nil, nil, "TCP", "ROUND_ROBIN", "ONLINE", nil, "ERROR").
+					AddRow("p-3", nil, nil, "TCP", "ROUND_ROBIN", "ONLINE", nil, "PENDING_CREATE").
+					AddRow("p-4", nil, nil, "TCP", "ROUND_ROBIN", "ONLINE", nil, "PENDING_UPDATE").
+					AddRow("p-5", nil, nil, "TCP", "ROUND_ROBIN", "ONLINE", nil, "PENDING_DELETE").
+					AddRow("p-6", nil, nil, "TCP", "ROUND_ROBIN", "ONLINE", nil, "UNKNOWN_PROV")
 				mock.ExpectQuery(octaviadb.GetAllPools).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_loadbalancer_pool_status pool_status
 # TYPE openstack_loadbalancer_pool_status gauge
 openstack_loadbalancer_pool_status{id="p-1",lb_algorithm="ROUND_ROBIN",loadbalancers="",name="",operating_status="ONLINE",project_id="",protocol="TCP",provisioning_status="ACTIVE"} 0
-openstack_loadbalancer_pool_status{id="p-2",lb_algorithm="ROUND_ROBIN",loadbalancers="",name="",operating_status="ONLINE",project_id="",protocol="TCP",provisioning_status="DELETED"} 1
-openstack_loadbalancer_pool_status{id="p-3",lb_algorithm="ROUND_ROBIN",loadbalancers="",name="",operating_status="ONLINE",project_id="",protocol="TCP",provisioning_status="ERROR"} 2
-openstack_loadbalancer_pool_status{id="p-4",lb_algorithm="ROUND_ROBIN",loadbalancers="",name="",operating_status="ONLINE",project_id="",protocol="TCP",provisioning_status="PENDING_CREATE"} 3
-openstack_loadbalancer_pool_status{id="p-5",lb_algorithm="ROUND_ROBIN",loadbalancers="",name="",operating_status="ONLINE",project_id="",protocol="TCP",provisioning_status="PENDING_UPDATE"} 4
-openstack_loadbalancer_pool_status{id="p-6",lb_algorithm="ROUND_ROBIN",loadbalancers="",name="",operating_status="ONLINE",project_id="",protocol="TCP",provisioning_status="PENDING_DELETE"} 5
-openstack_loadbalancer_pool_status{id="p-7",lb_algorithm="ROUND_ROBIN",loadbalancers="",name="",operating_status="ONLINE",project_id="",protocol="TCP",provisioning_status="UNKNOWN_PROV"} -1
+openstack_loadbalancer_pool_status{id="p-2",lb_algorithm="ROUND_ROBIN",loadbalancers="",name="",operating_status="ONLINE",project_id="",protocol="TCP",provisioning_status="ERROR"} 1
+openstack_loadbalancer_pool_status{id="p-3",lb_algorithm="ROUND_ROBIN",loadbalancers="",name="",operating_status="ONLINE",project_id="",protocol="TCP",provisioning_status="PENDING_CREATE"} 2
+openstack_loadbalancer_pool_status{id="p-4",lb_algorithm="ROUND_ROBIN",loadbalancers="",name="",operating_status="ONLINE",project_id="",protocol="TCP",provisioning_status="PENDING_UPDATE"} 3
+openstack_loadbalancer_pool_status{id="p-5",lb_algorithm="ROUND_ROBIN",loadbalancers="",name="",operating_status="ONLINE",project_id="",protocol="TCP",provisioning_status="PENDING_DELETE"} 4
+openstack_loadbalancer_pool_status{id="p-6",lb_algorithm="ROUND_ROBIN",loadbalancers="",name="",operating_status="ONLINE",project_id="",protocol="TCP",provisioning_status="UNKNOWN_PROV"} -1
 # HELP openstack_loadbalancer_total_pools total_pools
 # TYPE openstack_loadbalancer_total_pools gauge
-openstack_loadbalancer_total_pools 7
+openstack_loadbalancer_total_pools 6
 `,
 		},
 		{
@@ -102,7 +100,7 @@ openstack_loadbalancer_total_pools 7
 # TYPE openstack_loadbalancer_pool_status gauge
 openstack_loadbalancer_pool_status{id="pool-a",lb_algorithm="ROUND_ROBIN",loadbalancers="lb-1",name="http-pool",operating_status="ONLINE",project_id="proj-1",protocol="HTTP",provisioning_status="ACTIVE"} 0
 openstack_loadbalancer_pool_status{id="pool-b",lb_algorithm="LEAST_CONNECTIONS",loadbalancers="lb-1",name="https-pool",operating_status="ERROR",project_id="proj-1",protocol="HTTPS",provisioning_status="ACTIVE"} 0
-openstack_loadbalancer_pool_status{id="pool-c",lb_algorithm="SOURCE_IP",loadbalancers="lb-2",name="tcp-pool",operating_status="OFFLINE",project_id="proj-2",protocol="TCP",provisioning_status="PENDING_UPDATE"} 4
+openstack_loadbalancer_pool_status{id="pool-c",lb_algorithm="SOURCE_IP",loadbalancers="lb-2",name="tcp-pool",operating_status="OFFLINE",project_id="proj-2",protocol="TCP",provisioning_status="PENDING_UPDATE"} 3
 # HELP openstack_loadbalancer_total_pools total_pools
 # TYPE openstack_loadbalancer_total_pools gauge
 openstack_loadbalancer_total_pools 3

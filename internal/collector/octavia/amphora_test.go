@@ -76,9 +76,8 @@ openstack_loadbalancer_total_amphorae 1
 					AddRow("id-3", nil, "READY", nil, nil, nil, nil, nil).
 					AddRow("id-4", nil, "PENDING_CREATE", nil, nil, nil, nil, nil).
 					AddRow("id-5", nil, "PENDING_DELETE", nil, nil, nil, nil, nil).
-					AddRow("id-6", nil, "DELETED", nil, nil, nil, nil, nil).
-					AddRow("id-7", nil, "ERROR", nil, nil, nil, nil, nil).
-					AddRow("id-8", nil, "UNKNOWN_STATUS", nil, nil, nil, nil, nil)
+					AddRow("id-6", nil, "ERROR", nil, nil, nil, nil, nil).
+					AddRow("id-7", nil, "UNKNOWN_STATUS", nil, nil, nil, nil, nil)
 				mock.ExpectQuery(octaviadb.GetAllAmphora).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_loadbalancer_amphora_status amphora_status
@@ -88,12 +87,11 @@ openstack_loadbalancer_amphora_status{cert_expiration="",compute_id="",ha_ip="",
 openstack_loadbalancer_amphora_status{cert_expiration="",compute_id="",ha_ip="",id="id-3",lb_network_ip="",loadbalancer_id="",role="",status="READY"} 2
 openstack_loadbalancer_amphora_status{cert_expiration="",compute_id="",ha_ip="",id="id-4",lb_network_ip="",loadbalancer_id="",role="",status="PENDING_CREATE"} 3
 openstack_loadbalancer_amphora_status{cert_expiration="",compute_id="",ha_ip="",id="id-5",lb_network_ip="",loadbalancer_id="",role="",status="PENDING_DELETE"} 4
-openstack_loadbalancer_amphora_status{cert_expiration="",compute_id="",ha_ip="",id="id-6",lb_network_ip="",loadbalancer_id="",role="",status="DELETED"} 5
-openstack_loadbalancer_amphora_status{cert_expiration="",compute_id="",ha_ip="",id="id-7",lb_network_ip="",loadbalancer_id="",role="",status="ERROR"} 6
-openstack_loadbalancer_amphora_status{cert_expiration="",compute_id="",ha_ip="",id="id-8",lb_network_ip="",loadbalancer_id="",role="",status="UNKNOWN_STATUS"} -1
+openstack_loadbalancer_amphora_status{cert_expiration="",compute_id="",ha_ip="",id="id-6",lb_network_ip="",loadbalancer_id="",role="",status="ERROR"} 5
+openstack_loadbalancer_amphora_status{cert_expiration="",compute_id="",ha_ip="",id="id-7",lb_network_ip="",loadbalancer_id="",role="",status="UNKNOWN_STATUS"} -1
 # HELP openstack_loadbalancer_total_amphorae total_amphorae
 # TYPE openstack_loadbalancer_total_amphorae gauge
-openstack_loadbalancer_total_amphorae 8
+openstack_loadbalancer_total_amphorae 7
 `,
 		},
 		{

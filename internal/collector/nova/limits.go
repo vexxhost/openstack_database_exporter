@@ -97,6 +97,35 @@ func (c *LimitsCollector) collectLimitsMetrics(ch chan<- prometheus.Metric) erro
 		return err
 	}
 
+	// Get default quota class overrides from DB (class_name = 'default')
+	dbDefaults := make(map[string]float64)
+	quotaClassDefaults, err := c.novaAPIDB.GetQuotaClassDefaults(ctx)
+	if err != nil {
+		c.logger.Error("Failed to get quota class defaults", "error", err)
+	} else {
+		for _, qc := range quotaClassDefaults {
+			if qc.Resource.Valid {
+				dbDefaults[qc.Resource.String] = float64(qc.HardLimit.Int32)
+			}
+		}
+	}
+
+	// Hardcoded Nova defaults (fallback when no DB default exists)
+	hardcodedDefaults := map[string]float64{
+		"instances": 10,
+		"cores":     20,
+		"ram":       51200,
+	}
+
+	// Merge: DB defaults override hardcoded defaults
+	effectiveDefaults := make(map[string]float64)
+	for k, v := range hardcodedDefaults {
+		effectiveDefaults[k] = v
+	}
+	for k, v := range dbDefaults {
+		effectiveDefaults[k] = v
+	}
+
 	// Build limits maps by project and resource
 	limitsByProject := make(map[string]map[string]float64)
 	projectHasQuota := make(map[string]map[string]bool)
@@ -148,26 +177,15 @@ func (c *LimitsCollector) collectLimitsMetrics(ch chan<- prometheus.Metric) erro
 		c.logger.Warn("Placement database not configured, limits_*_used metrics will be 0")
 	}
 
-	// Collect all project IDs from both sources
-	allProjects := make(map[string]bool)
-	for projectID := range limitsByProject {
-		allProjects[projectID] = true
-	}
-	for projectID := range instanceCountByProject {
-		allProjects[projectID] = true
-	}
-	for projectID := range vcpusUsedByProject {
-		allProjects[projectID] = true
-	}
-	for projectID := range memoryUsedByProject {
-		allProjects[projectID] = true
-	}
+	// Iterate ALL projects from keystone — default quotas apply to every project
+	allProjectInfos := c.projectResolver.AllProjects()
 
-	for projectID := range allProjects {
-		tenantName, domainID := c.projectResolver.Resolve(projectID)
+	for projectID, info := range allProjectInfos {
+		tenantName := info.Name
+		domainID := info.DomainID
 
 		// Instances
-		instancesMax := float64(10) // Default
+		instancesMax := effectiveDefaults["instances"]
 		if projectHasQuota[projectID] != nil && projectHasQuota[projectID]["instances"] {
 			instancesMax = limitsByProject[projectID]["instances"]
 		}
@@ -186,7 +204,7 @@ func (c *LimitsCollector) collectLimitsMetrics(ch chan<- prometheus.Metric) erro
 		)
 
 		// Memory
-		memoryMax := float64(51200) // Default
+		memoryMax := effectiveDefaults["ram"]
 		if projectHasQuota[projectID] != nil && projectHasQuota[projectID]["ram"] {
 			memoryMax = limitsByProject[projectID]["ram"]
 		}
@@ -205,7 +223,7 @@ func (c *LimitsCollector) collectLimitsMetrics(ch chan<- prometheus.Metric) erro
 		)
 
 		// VCPUs
-		vcpusMax := float64(20) // Default
+		vcpusMax := effectiveDefaults["cores"]
 		if projectHasQuota[projectID] != nil && projectHasQuota[projectID]["cores"] {
 			vcpusMax = limitsByProject[projectID]["cores"]
 		}

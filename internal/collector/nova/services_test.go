@@ -67,7 +67,7 @@ func TestServicesCollector(t *testing.T) {
 				mock.ExpectQuery(regexp.QuoteMeta(novadb.GetServices)).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_nova_agent_state agent_state
-# TYPE openstack_nova_agent_state counter
+# TYPE openstack_nova_agent_state gauge
 `,
 		},
 		{

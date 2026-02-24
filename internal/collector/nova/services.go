@@ -82,7 +82,7 @@ func (c *ServicesCollector) Collect(ch chan<- prometheus.Metric) error {
 
 		ch <- prometheus.MustNewConstMetric(
 			agentStateDesc,
-			prometheus.CounterValue, // Original uses counter, not gauge
+			prometheus.GaugeValue,
 			agentValue,
 			adminState,
 			disabledReason,

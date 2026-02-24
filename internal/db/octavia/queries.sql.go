@@ -22,6 +22,8 @@ SELECT
     cert_expiration
 FROM
     amphora
+WHERE
+    status != 'DELETED'
 `
 
 type GetAllAmphoraRow struct {
@@ -79,6 +81,8 @@ SELECT
 FROM
     load_balancer lb
     LEFT JOIN vip v ON lb.id = v.load_balancer_id
+WHERE
+    lb.provisioning_status != 'DELETED'
 `
 
 type GetAllLoadBalancersWithVipRow struct {
@@ -134,6 +138,8 @@ SELECT
     provisioning_status
 FROM
     pool
+WHERE
+    provisioning_status != 'DELETED'
 `
 
 type GetAllPoolsRow struct {

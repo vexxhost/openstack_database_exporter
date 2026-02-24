@@ -153,17 +153,27 @@ func TestIntegration_E2E_FullExporter(t *testing.T) {
 		 ('sg-001', 'default', 'proj-001', 7)`,
 		`INSERT INTO quotas (id, project_id, resource, `+"`limit`"+`) VALUES
 		 ('q-001', 'proj-001', 'network', 200)`,
+		// Subnet pool with a /24 prefix
+		`INSERT INTO standardattributes (id, resource_type, created_at) VALUES (10, 'subnetpools', NOW()), (11, 'subnets', NOW())`,
+		`INSERT INTO subnetpools (id, name, ip_version, default_prefixlen, min_prefixlen, max_prefixlen, project_id, standard_attr_id) VALUES
+		 ('sp-001', 'test-pool', 4, 26, 24, 26, 'proj-001', 10)`,
+		`INSERT INTO subnetpoolprefixes (cidr, subnetpool_id) VALUES ('10.200.0.0/24', 'sp-001')`,
+		`INSERT INTO subnets (id, name, network_id, ip_version, cidr, gateway_ip, enable_dhcp, project_id, subnetpool_id, standard_attr_id) VALUES
+		 ('sub-sp01', 'pool-subnet', 'net-001', 4, '10.200.0.0/26', '10.200.0.1', 1, 'proj-001', 'sp-001', 11)`,
 	)
 
-	// Octavia: amphorae, load balancers, VIPs, pools
+	// Octavia: amphorae, load balancers, VIPs, pools (including soft-deleted resources that should be filtered out)
 	itest.SeedSQL(t, octaviaRes.DB,
 		`INSERT INTO amphora (id, compute_id, status, load_balancer_id, lb_network_ip, ha_ip, role, cert_expiration, cert_busy) VALUES
-		 ('amp-001', 'compute-001', 'READY', 'lb-001', '10.0.0.1', '10.0.0.2', 'MASTER', '2025-12-31 23:59:59', 0)`,
+		 ('amp-001', 'compute-001', 'READY', 'lb-001', '10.0.0.1', '10.0.0.2', 'MASTER', '2025-12-31 23:59:59', 0),
+		 ('amp-del', 'compute-del', 'DELETED', 'lb-del', '10.0.0.99', '10.0.0.98', 'MASTER', '2024-01-01 00:00:00', 0)`,
 		`INSERT INTO load_balancer (id, project_id, name, provisioning_status, operating_status, enabled, provider) VALUES
-		 ('lb-001', 'proj-abc', 'web-lb', 'ACTIVE', 'ONLINE', 1, 'octavia')`,
+		 ('lb-001', 'proj-abc', 'web-lb', 'ACTIVE', 'ONLINE', 1, 'octavia'),
+		 ('lb-del', 'proj-abc', 'deleted-lb', 'DELETED', 'OFFLINE', 0, 'octavia')`,
 		`INSERT INTO vip (load_balancer_id, ip_address) VALUES ('lb-001', '203.0.113.50')`,
 		`INSERT INTO pool (id, project_id, name, protocol, lb_algorithm, operating_status, enabled, load_balancer_id, provisioning_status) VALUES
-		 ('pool-001', 'proj-abc', 'http-pool', 'HTTP', 'ROUND_ROBIN', 'ONLINE', 1, 'lb-001', 'ACTIVE')`,
+		 ('pool-001', 'proj-abc', 'http-pool', 'HTTP', 'ROUND_ROBIN', 'ONLINE', 1, 'lb-001', 'ACTIVE'),
+		 ('pool-del', 'proj-abc', 'deleted-pool', 'TCP', 'ROUND_ROBIN', 'OFFLINE', 0, 'lb-del', 'DELETED')`,
 	)
 
 	// Placement: resource providers, classes, inventories, allocations, projects, users, consumers
@@ -252,7 +262,7 @@ func TestIntegration_E2E_FullExporter(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to GET /metrics: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -340,10 +350,13 @@ func TestIntegration_E2E_FullExporter(t *testing.T) {
 	assertGaugeValue(t, families, "openstack_neutron_routers", 1)
 	assertMetricExists(t, families, "openstack_neutron_router")
 	assertGaugeValue(t, families, "openstack_neutron_security_groups", 1)
-	assertGaugeValue(t, families, "openstack_neutron_subnets", 1)
+	assertGaugeValue(t, families, "openstack_neutron_subnets", 2)
 	assertMetricExists(t, families, "openstack_neutron_subnet")
 	assertMetricExists(t, families, "openstack_neutron_network_ip_availabilities_total")
 	assertMetricExists(t, families, "openstack_neutron_network_ip_availabilities_used")
+	assertMetricExists(t, families, "openstack_neutron_subnets_total")
+	assertMetricExists(t, families, "openstack_neutron_subnets_free")
+	assertMetricExists(t, families, "openstack_neutron_subnets_used")
 	assertMetricExists(t, families, "openstack_neutron_quota_network")
 
 	// Octavia
@@ -384,7 +397,7 @@ func TestIntegration_E2E_FullExporter(t *testing.T) {
 	if err != nil {
 		t.Fatalf("second scrape failed: %v", err)
 	}
-	resp2.Body.Close()
+	_ = resp2.Body.Close()
 	elapsed := time.Since(start)
 	t.Logf("Second scrape completed in %v", elapsed)
 	if elapsed > 10*time.Second {
@@ -420,7 +433,7 @@ func TestIntegration_E2E_PartialConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to GET /metrics: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("expected 200, got %d", resp.StatusCode)
@@ -485,8 +498,8 @@ func TestIntegration_E2E_ScrapeTiming(t *testing.T) {
 	if err != nil {
 		t.Fatalf("warm-up scrape failed: %v", err)
 	}
-	io.Copy(io.Discard, resp.Body)
-	resp.Body.Close()
+	_, _ = io.Copy(io.Discard, resp.Body)
+	_ = resp.Body.Close()
 
 	// Timed scrapes — run 5 consecutive scrapes
 	for i := 0; i < 5; i++ {
@@ -495,8 +508,8 @@ func TestIntegration_E2E_ScrapeTiming(t *testing.T) {
 		if err != nil {
 			t.Fatalf("scrape %d failed: %v", i, err)
 		}
-		io.Copy(io.Discard, resp.Body)
-		resp.Body.Close()
+		_, _ = io.Copy(io.Discard, resp.Body)
+		_ = resp.Body.Close()
 		elapsed := time.Since(start)
 		t.Logf("Scrape %d: %v", i, elapsed)
 		if elapsed > 5*time.Second {
@@ -555,7 +568,7 @@ func TestIntegration_E2E_ConcurrentScrapes(t *testing.T) {
 					continue
 				}
 				body, err := io.ReadAll(resp.Body)
-				resp.Body.Close()
+				_ = resp.Body.Close()
 				if err != nil {
 					errCh <- fmt.Errorf("worker %d scrape %d read: %v", workerID, s, err)
 					continue
@@ -648,7 +661,7 @@ func TestIntegration_E2E_DBDownResilience(t *testing.T) {
 	// Terminate the Cinder container so that subsequent queries from the collector fail.
 	// The collector has its own *sql.DB (from db.Connect), but the underlying MySQL
 	// server is gone, so queries will error out.
-	cinderRes.Terminate(context.Background())
+	_ = cinderRes.Terminate(context.Background())
 
 	// Give connections a moment to realize they're dead
 	time.Sleep(500 * time.Millisecond)
@@ -673,7 +686,7 @@ func scrapeAndParse(t *testing.T, url string) map[string]*dto.MetricFamily {
 	if err != nil {
 		t.Fatalf("scrape failed: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

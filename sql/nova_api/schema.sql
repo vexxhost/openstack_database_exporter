@@ -62,6 +62,19 @@ CREATE TABLE IF NOT EXISTS
     );
 
 CREATE TABLE IF NOT EXISTS
+    `quota_classes` (
+        `created_at` DATETIME NULL,
+        `updated_at` DATETIME NULL,
+        `id` INT NOT NULL AUTO_INCREMENT,
+        `class_name` VARCHAR(255) NULL,
+        `resource` VARCHAR(255) NULL,
+        `hard_limit` INT NULL,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY uniq_quota_classes0class_name0resource (`class_name`, `resource`),
+        KEY quota_classes_class_name_idx (`class_name`)
+    );
+
+CREATE TABLE IF NOT EXISTS
     `quota_usages` (
         `created_at` DATETIME NULL,
         `updated_at` DATETIME NULL,

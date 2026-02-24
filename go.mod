@@ -14,6 +14,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.40.0
 	github.com/testcontainers/testcontainers-go/modules/mariadb v0.40.0
+	go4.org/netipx v0.0.0-20231129151722-fdeea329fbba
 )
 
 require (

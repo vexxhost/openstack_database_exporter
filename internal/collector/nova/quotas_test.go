@@ -3,6 +3,7 @@ package nova
 import (
 	"database/sql"
 	"log/slog"
+	"regexp"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -29,6 +30,10 @@ func TestQuotasCollector(t *testing.T) {
 				)
 
 				mock.ExpectQuery("SELECT (.+) FROM quotas").WillReturnRows(rows)
+
+				// Mock GetQuotaClassDefaults (empty result)
+				defaultRows := sqlmock.NewRows([]string{"resource", "hard_limit"})
+				mock.ExpectQuery(regexp.QuoteMeta(novaapidb.GetQuotaClassDefaults)).WillReturnRows(defaultRows)
 			},
 			ExpectedMetrics: ``,
 		},
@@ -39,6 +44,10 @@ func TestQuotasCollector(t *testing.T) {
 					"id", "project_id", "resource", "hard_limit",
 				})
 				mock.ExpectQuery("SELECT (.+) FROM quotas").WillReturnRows(rows)
+
+				// Mock GetQuotaClassDefaults (empty result)
+				defaultRows := sqlmock.NewRows([]string{"resource", "hard_limit"})
+				mock.ExpectQuery(regexp.QuoteMeta(novaapidb.GetQuotaClassDefaults)).WillReturnRows(defaultRows)
 			},
 			ExpectedMetrics: ``,
 		},

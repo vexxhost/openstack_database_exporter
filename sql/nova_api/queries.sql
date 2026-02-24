@@ -40,6 +40,13 @@ SELECT
 FROM aggregate_hosts ah
 JOIN aggregates a ON ah.aggregate_id = a.id;
 
+-- name: GetQuotaClassDefaults :many
+SELECT 
+    resource,
+    hard_limit
+FROM quota_classes
+WHERE class_name = 'default';
+
 -- name: GetQuotaUsages :many
 SELECT 
     id,

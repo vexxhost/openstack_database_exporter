@@ -426,6 +426,62 @@ openstack_neutron_network_ip_availabilities_used{cidr="10.0.0.0/24",ip_version="
 			t.Fatalf("unexpected ip_availabilities_used error: %v", err)
 		}
 	})
+
+	t.Run("with subnet pools", func(t *testing.T) {
+		itest.SeedSQL(t, db,
+			// Create a subnet pool with a /24 prefix, min=24 max=26
+			`INSERT INTO standardattributes (id, resource_type, created_at) VALUES
+			(750, 'subnetpools', NOW())
+			ON DUPLICATE KEY UPDATE id=id`,
+			`INSERT INTO subnetpools (id, name, ip_version, default_prefixlen, min_prefixlen, max_prefixlen, project_id, standard_attr_id) VALUES
+			('pool-sp01', 'test-pool', 4, 26, 24, 26, 'proj-001', 750)`,
+			`INSERT INTO subnetpoolprefixes (cidr, subnetpool_id) VALUES
+			('10.100.0.0/24', 'pool-sp01')`,
+			// Create a subnet allocated from this pool (a /26)
+			`INSERT INTO standardattributes (id, resource_type, created_at) VALUES
+			(751, 'subnets', NOW())
+			ON DUPLICATE KEY UPDATE id=id`,
+			`INSERT INTO subnets (id, name, network_id, ip_version, cidr, gateway_ip, enable_dhcp, project_id, subnetpool_id, standard_attr_id) VALUES
+			('sub-sp01', 'pool-subnet', 'snet-001', 4, '10.100.0.0/26', '10.100.0.1', 1, 'proj-001', 'pool-sp01', 751)`,
+		)
+
+		collector := NewSubnetCollector(db, logger)
+
+		// For a /24 pool with min_prefixlen=24, max_prefixlen=26:
+		// prefix_length=24: total=1, used=0 (no /24 subnet allocated), free=0 (the /26 eats into it)
+		// prefix_length=25: total=2, used=0, free=1
+		// prefix_length=26: total=4, used=1, free=3
+
+		err := testutil.CollectAndCompare(collector, strings.NewReader(`# HELP openstack_neutron_subnets_total subnets_total
+# TYPE openstack_neutron_subnets_total gauge
+openstack_neutron_subnets_total{ip_version="4",prefix="10.100.0.0/24",prefix_length="24",project_id="proj-001",subnet_pool_id="pool-sp01",subnet_pool_name="test-pool"} 1
+openstack_neutron_subnets_total{ip_version="4",prefix="10.100.0.0/24",prefix_length="25",project_id="proj-001",subnet_pool_id="pool-sp01",subnet_pool_name="test-pool"} 2
+openstack_neutron_subnets_total{ip_version="4",prefix="10.100.0.0/24",prefix_length="26",project_id="proj-001",subnet_pool_id="pool-sp01",subnet_pool_name="test-pool"} 4
+`), "openstack_neutron_subnets_total")
+		if err != nil {
+			t.Fatalf("unexpected subnets_total error: %v", err)
+		}
+
+		err = testutil.CollectAndCompare(collector, strings.NewReader(`# HELP openstack_neutron_subnets_used subnets_used
+# TYPE openstack_neutron_subnets_used gauge
+openstack_neutron_subnets_used{ip_version="4",prefix="10.100.0.0/24",prefix_length="24",project_id="proj-001",subnet_pool_id="pool-sp01",subnet_pool_name="test-pool"} 0
+openstack_neutron_subnets_used{ip_version="4",prefix="10.100.0.0/24",prefix_length="25",project_id="proj-001",subnet_pool_id="pool-sp01",subnet_pool_name="test-pool"} 0
+openstack_neutron_subnets_used{ip_version="4",prefix="10.100.0.0/24",prefix_length="26",project_id="proj-001",subnet_pool_id="pool-sp01",subnet_pool_name="test-pool"} 1
+`), "openstack_neutron_subnets_used")
+		if err != nil {
+			t.Fatalf("unexpected subnets_used error: %v", err)
+		}
+
+		err = testutil.CollectAndCompare(collector, strings.NewReader(`# HELP openstack_neutron_subnets_free subnets_free
+# TYPE openstack_neutron_subnets_free gauge
+openstack_neutron_subnets_free{ip_version="4",prefix="10.100.0.0/24",prefix_length="24",project_id="proj-001",subnet_pool_id="pool-sp01",subnet_pool_name="test-pool"} 0
+openstack_neutron_subnets_free{ip_version="4",prefix="10.100.0.0/24",prefix_length="25",project_id="proj-001",subnet_pool_id="pool-sp01",subnet_pool_name="test-pool"} 1
+openstack_neutron_subnets_free{ip_version="4",prefix="10.100.0.0/24",prefix_length="26",project_id="proj-001",subnet_pool_id="pool-sp01",subnet_pool_name="test-pool"} 3
+`), "openstack_neutron_subnets_free")
+		if err != nil {
+			t.Fatalf("unexpected subnets_free error: %v", err)
+		}
+	})
 }
 
 func TestIntegration_QuotaCollector(t *testing.T) {

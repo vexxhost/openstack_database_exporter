@@ -51,6 +51,15 @@ type Quota struct {
 	HardLimit sql.NullInt32
 }
 
+type QuotaClass struct {
+	CreatedAt sql.NullTime
+	UpdatedAt sql.NullTime
+	ID        int32
+	ClassName sql.NullString
+	Resource  sql.NullString
+	HardLimit sql.NullInt32
+}
+
 type QuotaUsage struct {
 	CreatedAt    sql.NullTime
 	UpdatedAt    sql.NullTime

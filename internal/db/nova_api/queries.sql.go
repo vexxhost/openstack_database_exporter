@@ -170,6 +170,42 @@ func (q *Queries) GetFlavors(ctx context.Context) ([]GetFlavorsRow, error) {
 	return items, nil
 }
 
+const GetQuotaClassDefaults = `-- name: GetQuotaClassDefaults :many
+SELECT 
+    resource,
+    hard_limit
+FROM quota_classes
+WHERE class_name = 'default'
+`
+
+type GetQuotaClassDefaultsRow struct {
+	Resource  sql.NullString
+	HardLimit sql.NullInt32
+}
+
+func (q *Queries) GetQuotaClassDefaults(ctx context.Context) ([]GetQuotaClassDefaultsRow, error) {
+	rows, err := q.db.QueryContext(ctx, GetQuotaClassDefaults)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetQuotaClassDefaultsRow
+	for rows.Next() {
+		var i GetQuotaClassDefaultsRow
+		if err := rows.Scan(&i.Resource, &i.HardLimit); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetQuotaUsages = `-- name: GetQuotaUsages :many
 SELECT 
     id,

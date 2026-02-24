@@ -194,7 +194,21 @@ func (c *QuotasCollector) collectQuotaMetrics(ch chan<- prometheus.Metric) error
 		projectHasQuota[projectID][resource] = true
 	}
 
+	// Get default quota class overrides from DB (class_name = 'default')
+	dbDefaults := make(map[string]float64)
+	quotaClassDefaults, err := c.novaAPIDB.GetQuotaClassDefaults(ctx)
+	if err != nil {
+		c.logger.Error("Failed to get quota class defaults", "error", err)
+	} else {
+		for _, qc := range quotaClassDefaults {
+			if qc.Resource.Valid {
+				dbDefaults[qc.Resource.String] = float64(qc.HardLimit.Int32)
+			}
+		}
+	}
+
 	// Define default quota values (used when no explicit quota is set)
+	// Hardcoded Nova defaults as fallback
 	defaultQuotas := map[string]float64{
 		"cores":                       20,
 		"fixed_ips":                   -1,
@@ -212,18 +226,18 @@ func (c *QuotasCollector) collectQuotaMetrics(ch chan<- prometheus.Metric) error
 		"server_groups":               10,
 	}
 
-	// Get all unique project IDs from both limits and placement usage
-	allProjects := make(map[string]bool)
-	for projectID := range limitsByProject {
-		allProjects[projectID] = true
-	}
-	for projectID := range instanceCountByProject {
-		allProjects[projectID] = true
+	// Override hardcoded defaults with DB quota_classes defaults
+	for k, v := range dbDefaults {
+		defaultQuotas[k] = v
 	}
 
+	// Iterate ALL projects from keystone — default quotas apply to every project
+	allProjectInfos := c.projectResolver.AllProjects()
+
 	// Emit metrics for each project and quota type
-	for projectID := range allProjects {
-		tenantName, domainID := c.projectResolver.Resolve(projectID)
+	for projectID, info := range allProjectInfos {
+		tenantName := info.Name
+		domainID := info.DomainID
 
 		for quotaType, defaultValue := range defaultQuotas {
 			// Get limit: use DB value if explicitly set, otherwise use default
