@@ -147,7 +147,7 @@ openstack_cinder_limits_volume_used_gb{tenant="proj-1",tenant_id="proj-1"} 100
 `,
 		},
 		{
-			Name: "volume type quotas emitted per project per type",
+			Name: "volume type quotas default to -1 when no per-type quota exists",
 			SetupMock: func(mock sqlmock.Sqlmock) {
 				rows := sqlmock.NewRows(cols).
 					AddRow("proj-1", "gigabytes", 1000, 50).
@@ -174,6 +174,37 @@ openstack_cinder_limits_volume_used_gb{tenant="proj-1",tenant_id="proj-1"} 50
 # TYPE openstack_cinder_volume_type_quota_gigabytes gauge
 openstack_cinder_volume_type_quota_gigabytes{tenant="proj-1",tenant_id="proj-1",volume_type="__DEFAULT__"} -1
 openstack_cinder_volume_type_quota_gigabytes{tenant="proj-1",tenant_id="proj-1",volume_type="standard"} -1
+`,
+		},
+		{
+			Name: "per-volume-type quota picked up from gigabytes_ resource",
+			SetupMock: func(mock sqlmock.Sqlmock) {
+				rows := sqlmock.NewRows(cols).
+					AddRow("proj-1", "gigabytes", 1000, 50).
+					AddRow("proj-1", "backup_gigabytes", 500, 10).
+					AddRow("proj-1", "gigabytes_standard", 300, 0)
+				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.GetProjectQuotaLimits)).WillReturnRows(rows)
+				vtRows := sqlmock.NewRows(vtCols).
+					AddRow("type-1", "standard").
+					AddRow("type-2", "__DEFAULT__")
+				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.GetVolumeTypes)).WillReturnRows(vtRows)
+			},
+			ExpectedMetrics: `# HELP openstack_cinder_limits_backup_max_gb limits_backup_max_gb
+# TYPE openstack_cinder_limits_backup_max_gb gauge
+openstack_cinder_limits_backup_max_gb{tenant="proj-1",tenant_id="proj-1"} 500
+# HELP openstack_cinder_limits_backup_used_gb limits_backup_used_gb
+# TYPE openstack_cinder_limits_backup_used_gb gauge
+openstack_cinder_limits_backup_used_gb{tenant="proj-1",tenant_id="proj-1"} 10
+# HELP openstack_cinder_limits_volume_max_gb limits_volume_max_gb
+# TYPE openstack_cinder_limits_volume_max_gb gauge
+openstack_cinder_limits_volume_max_gb{tenant="proj-1",tenant_id="proj-1"} 1000
+# HELP openstack_cinder_limits_volume_used_gb limits_volume_used_gb
+# TYPE openstack_cinder_limits_volume_used_gb gauge
+openstack_cinder_limits_volume_used_gb{tenant="proj-1",tenant_id="proj-1"} 50
+# HELP openstack_cinder_volume_type_quota_gigabytes volume_type_quota_gigabytes
+# TYPE openstack_cinder_volume_type_quota_gigabytes gauge
+openstack_cinder_volume_type_quota_gigabytes{tenant="proj-1",tenant_id="proj-1",volume_type="__DEFAULT__"} -1
+openstack_cinder_volume_type_quota_gigabytes{tenant="proj-1",tenant_id="proj-1",volume_type="standard"} 300
 `,
 		},
 		{

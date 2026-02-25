@@ -3,9 +3,9 @@ package neutron
 import (
 	"context"
 	"database/sql"
-	"encoding/binary"
 	"log/slog"
 	"math"
+	"math/big"
 	"net/netip"
 	"strconv"
 	"strings"
@@ -212,7 +212,7 @@ func (c *SubnetCollector) collectIPAvailabilities(ctx context.Context, ch chan<-
 		networkName string
 		projectID   string
 		subnetName  string
-		totalIPs    int64
+		totalIPs    float64
 	}
 
 	subnetTotals := make(map[string]*subnetInfo) // keyed by subnet_id
@@ -239,7 +239,7 @@ func (c *SubnetCollector) collectIPAvailabilities(ctx context.Context, ch chan<-
 		ch <- prometheus.MustNewConstMetric(
 			networkIPAvailabilitiesTotalDesc,
 			prometheus.GaugeValue,
-			float64(si.totalIPs),
+			si.totalIPs,
 			si.cidr,
 			strconv.Itoa(int(si.ipVersion)),
 			si.networkID,
@@ -251,7 +251,8 @@ func (c *SubnetCollector) collectIPAvailabilities(ctx context.Context, ch chan<-
 }
 
 // ipRangeSize returns the number of IPs in the range [firstIP, lastIP] inclusive.
-func ipRangeSize(firstIP, lastIP string) int64 {
+// Uses math/big.Int internally to handle large IPv6 ranges without overflow.
+func ipRangeSize(firstIP, lastIP string) float64 {
 	first, err := netip.ParseAddr(firstIP)
 	if err != nil {
 		return 0
@@ -264,24 +265,29 @@ func ipRangeSize(firstIP, lastIP string) int64 {
 	if first.Is4() && last.Is4() {
 		f := first.As4()
 		l := last.As4()
-		fInt := binary.BigEndian.Uint32(f[:])
-		lInt := binary.BigEndian.Uint32(l[:])
-		return int64(lInt-fInt) + 1
+		fInt := new(big.Int).SetBytes(f[:])
+		lInt := new(big.Int).SetBytes(l[:])
+		diff := new(big.Int).Sub(lInt, fInt)
+		if diff.Sign() < 0 {
+			return 0
+		}
+		diff.Add(diff, big.NewInt(1))
+		v, _ := diff.Float64()
+		return v
 	}
 
-	// IPv6: convert 16-byte addresses to uint128 and subtract
 	if first.Is6() && last.Is6() {
 		f := first.As16()
 		l := last.As16()
-		fHi := binary.BigEndian.Uint64(f[:8])
-		fLo := binary.BigEndian.Uint64(f[8:])
-		lHi := binary.BigEndian.Uint64(l[:8])
-		lLo := binary.BigEndian.Uint64(l[8:])
-
-		// Simple case: if high 64 bits are the same, just subtract low parts
-		if fHi == lHi {
-			return int64(lLo-fLo) + 1
+		fInt := new(big.Int).SetBytes(f[:])
+		lInt := new(big.Int).SetBytes(l[:])
+		diff := new(big.Int).Sub(lInt, fInt)
+		if diff.Sign() < 0 {
+			return 0
 		}
+		diff.Add(diff, big.NewInt(1))
+		v, _ := diff.Float64()
+		return v
 	}
 
 	return 0

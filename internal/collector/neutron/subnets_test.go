@@ -2,6 +2,7 @@ package neutron
 
 import (
 	"database/sql"
+	"math"
 	"net/netip"
 	"regexp"
 	"testing"
@@ -265,7 +266,7 @@ func TestIPRangeSize(t *testing.T) {
 	tests := []struct {
 		firstIP  string
 		lastIP   string
-		expected int64
+		expected float64
 	}{
 		{"10.13.55.230", "10.13.55.249", 20},
 		{"10.0.0.1", "10.0.0.1", 1},
@@ -273,12 +274,36 @@ func TestIPRangeSize(t *testing.T) {
 		{"10.0.0.2", "10.0.0.254", 253},
 		{"invalid", "10.0.0.1", 0},
 		{"10.0.0.1", "invalid", 0},
+		// IPv6: same high 64 bits
+		{"fd00::1", "fd00::100", 256},
+		// IPv6: single address
+		{"2001:db8::1", "2001:db8::1", 1},
+		// IPv6: small contiguous range
+		{"2001:db8::10", "2001:db8::1f", 16},
+		// IPv6: full low 64-bit range (overflows int64, fine in float64)
+		{"::", "::ffff:ffff:ffff:ffff", math.Pow(2, 64)},
+		// IPv6: crosses high/low 64-bit boundary (previously returned 0)
+		{"::", "0:0:0:1::", math.Pow(2, 64) + 1},
+		// IPv6: small cross-boundary range
+		{"fd00::ffff:ffff:ffff:ffff", "fd00:0:0:1::", 2},
+		// IPv6: typical /64 SLAAC pool (::1 to ::ffff:ffff:ffff:fffe)
+		{"2001:db8:1::1", "2001:db8:1::fffe", 65534},
+		// IPv6: /48 worth of addresses (2^80)
+		{"2001:db8:abcd::", "2001:db8:abcd:ffff:ffff:ffff:ffff:ffff", math.Pow(2, 80)},
+		// IPv6: inverted range (last < first) should return 0
+		{"fd00::100", "fd00::1", 0},
+		// IPv4: inverted range should return 0
+		{"10.0.0.254", "10.0.0.2", 0},
+		// Mixed IPv4 and IPv6 should return 0
+		{"10.0.0.1", "fd00::1", 0},
+		// Invalid IPv6
+		{"::gggg", "fd00::1", 0},
 	}
 
 	for _, tt := range tests {
 		got := ipRangeSize(tt.firstIP, tt.lastIP)
 		if got != tt.expected {
-			t.Errorf("ipRangeSize(%q, %q) = %d, want %d", tt.firstIP, tt.lastIP, got, tt.expected)
+			t.Errorf("ipRangeSize(%q, %q) = %g, want %g", tt.firstIP, tt.lastIP, got, tt.expected)
 		}
 	}
 }

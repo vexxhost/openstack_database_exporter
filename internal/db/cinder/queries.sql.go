@@ -203,7 +203,7 @@ FROM
         AND qu.deleted = 0
 WHERE
     q.deleted = 0
-    AND q.resource IN ('gigabytes', 'backup_gigabytes')
+    AND (q.resource IN ('gigabytes', 'backup_gigabytes') OR q.resource LIKE 'gigabytes\_%')
 `
 
 type GetProjectQuotaLimitsRow struct {

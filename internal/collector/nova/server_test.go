@@ -7,6 +7,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/stretchr/testify/assert"
 	novadb "github.com/vexxhost/openstack_database_exporter/internal/db/nova"
 	novaapidb "github.com/vexxhost/openstack_database_exporter/internal/db/nova_api"
 	"github.com/vexxhost/openstack_database_exporter/internal/testutil"
@@ -72,4 +73,60 @@ type serverCollectorWrapper struct {
 
 func (w *serverCollectorWrapper) Collect(ch chan<- prometheus.Metric) {
 	_ = w.ServerCollector.Collect(ch)
+}
+
+func TestResolveServerStatus(t *testing.T) {
+	tests := []struct {
+		name      string
+		vmState   string
+		taskState string
+		expected  string
+	}{
+		// Default vm_state mappings (no task_state)
+		{"active", "active", "", "ACTIVE"},
+		{"building", "building", "", "BUILD"},
+		{"stopped", "stopped", "", "SHUTOFF"},
+		{"resized", "resized", "", "VERIFY_RESIZE"},
+		{"paused", "paused", "", "PAUSED"},
+		{"suspended", "suspended", "", "SUSPENDED"},
+		{"rescued", "rescued", "", "RESCUE"},
+		{"error", "error", "", "ERROR"},
+		{"deleted", "deleted", "", "DELETED"},
+		{"soft-delete", "soft-delete", "", "SOFT_DELETED"},
+		{"shelved", "shelved", "", "SHELVED"},
+		{"shelved_offloaded", "shelved_offloaded", "", "SHELVED_OFFLOADED"},
+
+		// task_state overrides for active vm_state
+		{"active+rebuilding", "active", "rebuilding", "REBUILD"},
+		{"active+rebuild_spawning", "active", "rebuild_spawning", "REBUILD"},
+		{"active+migrating", "active", "migrating", "MIGRATING"},
+		{"active+resize_prep", "active", "resize_prep", "RESIZE"},
+		{"active+resize_migrating", "active", "resize_migrating", "RESIZE"},
+		{"active+shelving", "active", "shelving", "SHELVED"},
+		{"active+shelving_offloading", "active", "shelving_offloading", "SHELVED"},
+
+		// task_state overrides for stopped vm_state
+		{"stopped+resize_prep", "stopped", "resize_prep", "RESIZE"},
+		{"stopped+rebuilding", "stopped", "rebuilding", "REBUILD"},
+
+		// task_state overrides for resized vm_state
+		{"resized+resize_reverting", "resized", "resize_reverting", "REVERT_RESIZE"},
+
+		// task_state overrides for paused vm_state
+		{"paused+migrating", "paused", "migrating", "MIGRATING"},
+
+		// task_state that doesn't override (falls back to default)
+		{"active+powering_off", "active", "powering_off", "ACTIVE"},
+		{"stopped+powering_on", "stopped", "powering_on", "SHUTOFF"},
+
+		// Unknown vm_state falls back to ToUpper
+		{"unknown_state", "weird_state", "", "WEIRD_STATE"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := resolveServerStatus(tt.vmState, tt.taskState)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
 }

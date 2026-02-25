@@ -35,6 +35,59 @@ var (
 		"SHELVED",           // The server is in shelved state. Depends on the shelve offload time, the server will be automatically shelved off loaded.
 		"SHELVED_OFFLOADED", // The shelved server is offloaded (removed from the compute host) and it needs unshelved action to be used again.
 		"SOFT_DELETED",      // The server is marked as deleted but will remain in the cloud for some configurable amount of time.
+		"BUILD",             // Alias used by Nova API for vm_state=building.
+	}
+
+	// vmStateToAPIStatus maps Nova DB vm_state values to API-level status names.
+	// This replicates the _STATE_MAP from nova/api/openstack/common.py.
+	// When task_state is set, taskStateOverrides provides additional mappings.
+	vmStateToAPIStatus = map[string]string{
+		"active":            "ACTIVE",
+		"building":          "BUILD",
+		"stopped":           "SHUTOFF",
+		"resized":           "VERIFY_RESIZE",
+		"paused":            "PAUSED",
+		"suspended":         "SUSPENDED",
+		"rescued":           "RESCUE",
+		"error":             "ERROR",
+		"deleted":           "DELETED",
+		"soft-delete":       "SOFT_DELETED",
+		"shelved":           "SHELVED",
+		"shelved_offloaded": "SHELVED_OFFLOADED",
+	}
+
+	// taskStateOverrides maps (vm_state, task_state) pairs to API status overrides.
+	// Keyed by vm_state, then by task_state.
+	taskStateOverrides = map[string]map[string]string{
+		"active": {
+			"shelving":                      "SHELVED",
+			"shelving_image_pending_upload":  "SHELVED",
+			"shelving_image_uploading":       "SHELVED",
+			"shelving_offloading":            "SHELVED",
+			"rebuilding":                     "REBUILD",
+			"rebuild_block_device_mapping":   "REBUILD",
+			"rebuild_spawning":               "REBUILD",
+			"migrating":                      "MIGRATING",
+			"resize_prep":                    "RESIZE",
+			"resize_migrating":               "RESIZE",
+			"resize_migrated":                "RESIZE",
+			"resize_finish":                  "RESIZE",
+		},
+		"stopped": {
+			"resize_prep":                    "RESIZE",
+			"resize_migrating":               "RESIZE",
+			"resize_migrated":                "RESIZE",
+			"resize_finish":                  "RESIZE",
+			"rebuilding":                     "REBUILD",
+			"rebuild_block_device_mapping":   "REBUILD",
+			"rebuild_spawning":               "REBUILD",
+		},
+		"resized": {
+			"resize_reverting":               "REVERT_RESIZE",
+		},
+		"paused": {
+			"migrating":                      "MIGRATING",
+		},
 	}
 )
 
@@ -135,8 +188,9 @@ func (c *ServerCollector) collectServerMetrics(ch chan<- prometheus.Metric) erro
 		)
 
 		// Server status - detailed instance information using proper status mapping
-		// Apply strings.ToUpper to handle different casing in vm_state
-		statusValue := float64(mapServerStatus(strings.ToUpper(instance.VmState.String)))
+		// Translate vm_state (+task_state) to API-level status name
+		apiStatus := resolveServerStatus(instance.VmState.String, instance.TaskState.String)
+		statusValue := float64(mapServerStatus(apiStatus))
 
 		// Build instance name for libvirt
 		instanceLibvirt := fmt.Sprintf("instance-%08x", instance.ID)
@@ -169,7 +223,7 @@ func (c *ServerCollector) collectServerMetrics(ch chan<- prometheus.Metric) erro
 			instance.Uuid,
 			instanceLibvirt,
 			instance.DisplayName.String,
-			strings.ToUpper(instance.VmState.String),
+			apiStatus,
 			instance.ProjectID.String,
 			instance.UserID.String,
 			instance.Uuid,
@@ -200,4 +254,25 @@ func mapServerStatus(status string) int {
 		}
 	}
 	return -1
+}
+
+// resolveServerStatus translates a Nova DB vm_state (+ optional task_state)
+// into the API-level status string, matching nova/api/openstack/common.py _STATE_MAP.
+func resolveServerStatus(vmState, taskState string) string {
+	// Check for task_state override first
+	if taskState != "" {
+		if overrides, ok := taskStateOverrides[vmState]; ok {
+			if status, ok := overrides[taskState]; ok {
+				return status
+			}
+		}
+	}
+
+	// Fall back to the default vm_state mapping
+	if status, ok := vmStateToAPIStatus[vmState]; ok {
+		return status
+	}
+
+	// Unknown vm_state — return uppercased as last resort
+	return strings.ToUpper(vmState)
 }

@@ -276,4 +276,28 @@ openstack_cinder_volume_type_quota_gigabytes{tenant="proj-002",tenant_id="proj-0
 			t.Fatalf("expected 12 limit metrics, got %d", count)
 		}
 	})
+
+	t.Run("per-volume-type quota picked up", func(t *testing.T) {
+		// Add a per-volume-type quota (gigabytes_standard) for proj-001
+		itest.SeedSQL(t, db,
+			`INSERT INTO quotas (project_id, resource, hard_limit, deleted) VALUES
+			('proj-001', 'gigabytes_standard', 300, 0)`,
+		)
+
+		resolver := project.NewResolver(logger, nil, 0)
+		collector := NewLimitsCollector(db, logger, resolver)
+
+		// proj-001 should now have standard=300, __DEFAULT__=-1
+		// proj-002 should still have both at -1
+		err := testutil.CollectAndCompare(collector, strings.NewReader(`# HELP openstack_cinder_volume_type_quota_gigabytes volume_type_quota_gigabytes
+# TYPE openstack_cinder_volume_type_quota_gigabytes gauge
+openstack_cinder_volume_type_quota_gigabytes{tenant="proj-001",tenant_id="proj-001",volume_type="__DEFAULT__"} -1
+openstack_cinder_volume_type_quota_gigabytes{tenant="proj-001",tenant_id="proj-001",volume_type="standard"} 300
+openstack_cinder_volume_type_quota_gigabytes{tenant="proj-002",tenant_id="proj-002",volume_type="__DEFAULT__"} -1
+openstack_cinder_volume_type_quota_gigabytes{tenant="proj-002",tenant_id="proj-002",volume_type="standard"} -1
+`), "openstack_cinder_volume_type_quota_gigabytes")
+		if err != nil {
+			t.Fatalf("unexpected per-type quota error: %v", err)
+		}
+	})
 }
