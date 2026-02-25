@@ -55,12 +55,12 @@ jobs:
       - name: Build binary
         run: go build -o /dev/null ./cmd/openstack-database-exporter
 
-  # image:
-  #   needs: [golangci-lint, unit-test, build]
-  #   uses: vexxhost/github-actions/.github/workflows/nix-image.yaml@main
-  #   permissions:
-  #     id-token: write
-  #     contents: read
-  #     packages: write
-  #   with:
-  #     push: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+  image:
+    needs: [golangci-lint, unit-test, build]
+    uses: vexxhost/github-actions/.github/workflows/nix-image.yaml@main
+    permissions:
+      id-token: write
+      contents: read
+      packages: write
+    with:
+      push: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
