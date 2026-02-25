@@ -83,7 +83,6 @@ func (c *AmphoraCollector) Collect(ch chan<- prometheus.Metric) {
 				"READY",
 				"PENDING_CREATE",
 				"PENDING_DELETE",
-				"DELETED",
 				"ERROR",
 			}),
 			amphora.ID,

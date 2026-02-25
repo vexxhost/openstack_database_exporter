@@ -73,7 +73,6 @@ func (c *PoolCollector) Collect(ch chan<- prometheus.Metric) {
 			prometheus.GaugeValue,
 			util.StatusToValue(pool.ProvisioningStatus, []string{
 				"ACTIVE",
-				"DELETED",
 				"ERROR",
 				"PENDING_CREATE",
 				"PENDING_UPDATE",

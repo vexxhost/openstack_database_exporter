@@ -9,13 +9,13 @@ SELECT
     COALESCE(worker_ng.node_count, 0) as node_count
 FROM cluster c
 LEFT JOIN (
-    SELECT cluster_id, SUM(node_count) as node_count
+    SELECT cluster_id, CAST(SUM(node_count) AS SIGNED) as node_count
     FROM nodegroup 
     WHERE role = 'master'
     GROUP BY cluster_id
 ) master_ng ON c.uuid = master_ng.cluster_id
 LEFT JOIN (
-    SELECT cluster_id, SUM(node_count) as node_count
+    SELECT cluster_id, CAST(SUM(node_count) AS SIGNED) as node_count
     FROM nodegroup 
     WHERE role = 'worker'
     GROUP BY cluster_id

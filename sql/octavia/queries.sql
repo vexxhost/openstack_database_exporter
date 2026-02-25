@@ -9,7 +9,9 @@ SELECT
     load_balancer_id,
     provisioning_status
 FROM
-    pool;
+    pool
+WHERE
+    provisioning_status != 'DELETED';
 
 -- name: GetAllLoadBalancersWithVip :many
 SELECT
@@ -22,7 +24,9 @@ SELECT
     v.ip_address as vip_address
 FROM
     load_balancer lb
-    LEFT JOIN vip v ON lb.id = v.load_balancer_id;
+    LEFT JOIN vip v ON lb.id = v.load_balancer_id
+WHERE
+    lb.provisioning_status != 'DELETED';
 
 -- name: GetAllAmphora :many
 SELECT
@@ -35,4 +39,6 @@ SELECT
     role,
     cert_expiration
 FROM
-    amphora;
+    amphora
+WHERE
+    status != 'DELETED';

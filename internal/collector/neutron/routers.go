@@ -26,6 +26,13 @@ var (
 		},
 		nil,
 	)
+
+	neutronUpDesc = prometheus.NewDesc(
+		prometheus.BuildFQName(Namespace, Subsystem, "up"),
+		"up",
+		nil,
+		nil,
+	)
 )
 
 type HARouterAgentPortBindingCollector struct {
@@ -48,6 +55,7 @@ func NewHARouterAgentPortBindingCollector(db *sql.DB, logger *slog.Logger) *HARo
 
 func (c *HARouterAgentPortBindingCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- haRouterAgentPortBindingDesc
+	ch <- neutronUpDesc
 }
 
 func (c *HARouterAgentPortBindingCollector) Collect(ch chan<- prometheus.Metric) {
@@ -55,6 +63,8 @@ func (c *HARouterAgentPortBindingCollector) Collect(ch chan<- prometheus.Metric)
 
 	bindings, err := c.queries.GetHARouterAgentPortBindingsWithAgents(ctx)
 	if err != nil {
+		ch <- prometheus.MustNewConstMetric(neutronUpDesc, prometheus.GaugeValue, 0)
+
 		c.logger.Error("failed to query", "error", err)
 		return
 	}
@@ -78,4 +88,6 @@ func (c *HARouterAgentPortBindingCollector) Collect(ch chan<- prometheus.Metric)
 			binding.AgentHost.String,
 		)
 	}
+
+	ch <- prometheus.MustNewConstMetric(neutronUpDesc, prometheus.GaugeValue, 1)
 }

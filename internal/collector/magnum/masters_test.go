@@ -66,7 +66,7 @@ openstack_container_infra_cluster_masters{name="test-cluster-2",node_count="2",p
 				rows := sqlmock.NewRows([]string{
 					"uuid", "name", "stack_id", "status", "project_id", "master_count", "node_count",
 				}).AddRow(
-					nil, nil, "", "UNKNOWN_STATUS", nil, nil, nil,
+					nil, nil, "", "UNKNOWN_STATUS", nil, int64(0), int64(0),
 				)
 
 				mock.ExpectQuery(regexp.QuoteMeta(magnumdb.GetClusterMetrics)).WillReturnRows(rows)

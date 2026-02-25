@@ -45,6 +45,9 @@ func TestHARouterAgentPortBindingCollector(t *testing.T) {
 # TYPE openstack_neutron_l3_agent_of_router gauge
 openstack_neutron_l3_agent_of_router{agent_admin_up="true",agent_alive="true",agent_host="dev-os-ctrl-02",ha_state="active",l3_agent_id="ddbf087c-e38f-4a73-bcb3-c38f2a719a03",router_id="9daeb7dd-7e3f-4e44-8c42-c7a0e8c8a42f"} 1
 openstack_neutron_l3_agent_of_router{agent_admin_up="true",agent_alive="true",agent_host="dev-os-ctrl-02",ha_state="backup",l3_agent_id="ddbf087c-e38f-4a73-bcb3-c38f2a719a03",router_id="f8a44de0-fc8e-45df-93c7-f79bf3b01c95"} 1
+# HELP openstack_neutron_up up
+# TYPE openstack_neutron_up gauge
+openstack_neutron_up 1
 `,
 		},
 		{
@@ -72,6 +75,9 @@ openstack_neutron_l3_agent_of_router{agent_admin_up="true",agent_alive="true",ag
 			ExpectedMetrics: `# HELP openstack_neutron_l3_agent_of_router l3_agent_of_router
 # TYPE openstack_neutron_l3_agent_of_router gauge
 openstack_neutron_l3_agent_of_router{agent_admin_up="true",agent_alive="false",agent_host="dev-os-ctrl-02",ha_state="active",l3_agent_id="ddbf087c-e38f-4a73-bcb3-c38f2a719a03",router_id="9daeb7dd-7e3f-4e44-8c42-c7a0e8c8a42f"} 0
+# HELP openstack_neutron_up up
+# TYPE openstack_neutron_up gauge
+openstack_neutron_up 1
 `,
 		},
 		{
@@ -99,6 +105,9 @@ openstack_neutron_l3_agent_of_router{agent_admin_up="true",agent_alive="false",a
 			ExpectedMetrics: `# HELP openstack_neutron_l3_agent_of_router l3_agent_of_router
 # TYPE openstack_neutron_l3_agent_of_router gauge
 openstack_neutron_l3_agent_of_router{agent_admin_up="false",agent_alive="true",agent_host="dev-os-ctrl-02",ha_state="active",l3_agent_id="ddbf087c-e38f-4a73-bcb3-c38f2a719a03",router_id="9daeb7dd-7e3f-4e44-8c42-c7a0e8c8a42f"} 1
+# HELP openstack_neutron_up up
+# TYPE openstack_neutron_up gauge
+openstack_neutron_up 1
 `,
 		},
 		{
@@ -125,6 +134,9 @@ openstack_neutron_l3_agent_of_router{agent_admin_up="false",agent_alive="true",a
 			ExpectedMetrics: `# HELP openstack_neutron_l3_agent_of_router l3_agent_of_router
 # TYPE openstack_neutron_l3_agent_of_router gauge
 openstack_neutron_l3_agent_of_router{agent_admin_up="false",agent_alive="false",agent_host="",ha_state="",l3_agent_id="ddbf087c-e38f-4a73-bcb3-c38f2a719a03",router_id="9daeb7dd-7e3f-4e44-8c42-c7a0e8c8a42f"} 0
+# HELP openstack_neutron_up up
+# TYPE openstack_neutron_up gauge
+openstack_neutron_up 1
 `,
 		},
 		{
@@ -132,8 +144,10 @@ openstack_neutron_l3_agent_of_router{agent_admin_up="false",agent_alive="false",
 			SetupMock: func(mock sqlmock.Sqlmock) {
 				mock.ExpectQuery(neutrondb.GetHARouterAgentPortBindingsWithAgents).WillReturnError(sql.ErrConnDone)
 			},
-			ExpectedMetrics: "",
-			ExpectError:     true,
+			ExpectedMetrics: `# HELP openstack_neutron_up up
+# TYPE openstack_neutron_up gauge
+openstack_neutron_up 0
+`,
 		},
 	}
 

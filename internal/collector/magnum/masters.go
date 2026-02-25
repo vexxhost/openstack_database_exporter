@@ -74,20 +74,9 @@ func (c *MastersCollector) Collect(ch chan<- prometheus.Metric) {
 			projectID = cluster.ProjectID.String
 		}
 
-		// Convert interface{} to int for counts
-		masterCount := 0
-		if cluster.MasterCount != nil {
-			if mc, ok := cluster.MasterCount.(int64); ok {
-				masterCount = int(mc)
-			}
-		}
-
-		nodeCount := 0
-		if cluster.NodeCount != nil {
-			if nc, ok := cluster.NodeCount.(int64); ok {
-				nodeCount = int(nc)
-			}
-		}
+		// Convert int64 to int for counts
+		masterCount := int(cluster.MasterCount)
+		nodeCount := int(cluster.NodeCount)
 
 		nodeCountStr := fmt.Sprintf("%d", nodeCount)
 

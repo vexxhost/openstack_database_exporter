@@ -8,7 +8,32 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	maniladb "github.com/vexxhost/openstack_database_exporter/internal/db/manila"
+	"github.com/vexxhost/openstack_database_exporter/internal/util"
 )
+
+// volumeStatuses matches the upstream openstack-exporter mapVolumeStatus list exactly.
+// The upstream Manila exporter reuses the Cinder volume status mapping for share_status.
+var volumeStatuses = []string{
+	"creating",
+	"available",
+	"attaching",
+	"detaching",
+	"in-use",
+	"maintenance",
+	"deleting",
+	"awaiting-transfer",
+	"error",
+	"error_deleting",
+	"backing-up",
+	"restoring-backup",
+	"error_backing-up",
+	"error_restoring",
+	"error_extending",
+	"downloading",
+	"uploading",
+	"retyping",
+	"extending",
+}
 
 var (
 	// Known share statuses from the original openstack-exporter
@@ -30,14 +55,14 @@ var (
 		prometheus.BuildFQName(Namespace, Subsystem, "share_gb"),
 		"share_gb",
 		[]string{
-			"availability_zone",
 			"id",
 			"name",
-			"project_id",
-			"share_proto",
-			"share_type",
-			"share_type_name",
 			"status",
+			"availability_zone",
+			"share_type",
+			"share_proto",
+			"share_type_name",
+			"project_id",
 		},
 		nil,
 	)
@@ -48,12 +73,12 @@ var (
 		[]string{
 			"id",
 			"name",
-			"project_id",
-			"share_proto",
-			"share_type",
-			"share_type_name",
-			"size",
 			"status",
+			"size",
+			"share_type",
+			"share_proto",
+			"share_type_name",
+			"project_id",
 		},
 		nil,
 	)
@@ -144,11 +169,9 @@ func (c *SharesCollector) Collect(ch chan<- prometheus.Metric) {
 		if share.Status.Valid {
 			status = share.Status.String
 		}
+		shareType := share.ShareType
 		shareTypeName := share.ShareTypeName
 		availabilityZone := share.AvailabilityZone
-
-		// For share_type label, use availability_zone if available, otherwise empty
-		shareType := availabilityZone
 
 		totalShares++
 
@@ -158,27 +181,23 @@ func (c *SharesCollector) Collect(ch chan<- prometheus.Metric) {
 		}
 
 		// share_gb metric - size in GB per share
+		// Label order matches upstream: id, name, status, availability_zone, share_type, share_proto, share_type_name, project_id
 		ch <- prometheus.MustNewConstMetric(
 			shareGbDesc,
 			prometheus.GaugeValue,
 			float64(size),
-			availabilityZone,
 			shareID,
 			name,
-			projectID,
-			shareProto,
-			shareType,
-			shareTypeName,
 			status,
+			availabilityZone,
+			shareType,
+			shareProto,
+			shareTypeName,
+			projectID,
 		)
 
-		// share_status metric - status indicator per share
-		statusValue := 0.0
-		if status != "" {
-			statusValue = 1.0
-		}
-
-		// Convert size to string properly
+		// share_status metric - uses mapVolumeStatus like upstream openstack-exporter
+		// Label order matches upstream: id, name, status, size, share_type, share_proto, share_type_name, project_id
 		sizeStr := "0"
 		if share.Size.Valid {
 			sizeStr = fmt.Sprintf("%d", share.Size.Int32)
@@ -187,15 +206,15 @@ func (c *SharesCollector) Collect(ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(
 			shareStatusDesc,
 			prometheus.GaugeValue,
-			statusValue,
+			util.StatusToValue(status, volumeStatuses),
 			shareID,
 			name,
-			projectID,
-			shareProto,
-			shareType,
-			shareTypeName,
-			sizeStr,
 			status,
+			sizeStr,
+			shareType,
+			shareProto,
+			shareTypeName,
+			projectID,
 		)
 	}
 

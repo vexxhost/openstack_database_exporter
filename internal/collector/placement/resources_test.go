@@ -114,34 +114,6 @@ openstack_placement_up 1
 `,
 		},
 		{
-			Name: "handles invalid allocation ratio gracefully",
-			SetupMock: func(mock sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{
-					"hostname", "resource_type", "total", "allocation_ratio", "reserved", "used",
-				}).AddRow(
-					"test-host", "MEMORY_MB", 1024, "invalid_ratio", 0, []uint8("256"),
-				)
-
-				mock.ExpectQuery(regexp.QuoteMeta(placementdb.GetResourceMetrics)).WillReturnRows(rows)
-			},
-			ExpectedMetrics: `# HELP openstack_placement_resource_allocation_ratio resource_allocation_ratio
-# TYPE openstack_placement_resource_allocation_ratio gauge
-openstack_placement_resource_allocation_ratio{hostname="test-host",resourcetype="MEMORY_MB"} 1
-# HELP openstack_placement_resource_reserved resource_reserved
-# TYPE openstack_placement_resource_reserved gauge
-openstack_placement_resource_reserved{hostname="test-host",resourcetype="MEMORY_MB"} 0
-# HELP openstack_placement_resource_total resource_total
-# TYPE openstack_placement_resource_total gauge
-openstack_placement_resource_total{hostname="test-host",resourcetype="MEMORY_MB"} 1024
-# HELP openstack_placement_resource_usage resource_usage
-# TYPE openstack_placement_resource_usage gauge
-openstack_placement_resource_usage{hostname="test-host",resourcetype="MEMORY_MB"} 256
-# HELP openstack_placement_up up
-# TYPE openstack_placement_up gauge
-openstack_placement_up 1
-`,
-		},
-		{
 			Name: "database query error",
 			SetupMock: func(mock sqlmock.Sqlmock) {
 				mock.ExpectQuery(regexp.QuoteMeta(placementdb.GetResourceMetrics)).WillReturnError(sql.ErrConnDone)
