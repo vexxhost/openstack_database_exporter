@@ -8,6 +8,9 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -16,12 +19,17 @@ jobs:
       id-token: write
       packages: write
     steps:
-      - uses: depot/setup-action@15c09a5f77a0840ad4bce955686522a257853461 # v1.7.1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@a90bcbc6539c36a85cdfeb73f7e2f433735f215b # v2.15.0
+        with:
+          egress-policy: audit
+
+      - uses: step-security/depot-setup-action@f5473e0857ae0042e260d41d027c9b23ac531127 # v1.6.1
       - uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5.10.0
         id: meta
         with:
           images: ghcr.io/vexxhost/openstack-database-exporter
-      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+      - uses: step-security/docker-login-action@c3e677aae8393bc9c81cfdf9709648720ea4bd4d # v3.6.0
         if: github.event_name != 'pull_request'
         with:
           registry: ghcr.io
