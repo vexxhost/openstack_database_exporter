@@ -12,6 +12,11 @@ jobs:
   scan:
     runs-on: ubuntu-latest
     steps:
-      - uses: vexxhost/github-actions/scan-image@main
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@a90bcbc6539c36a85cdfeb73f7e2f433735f215b # v2.15.0
+        with:
+          egress-policy: audit
+
+      - uses: vexxhost/github-actions/scan-image@377e35d3a5c570338901d9e0edf48bcf86c7c9ef # main
         with:
           image-ref: ghcr.io/${{ github.repository_owner }}/openstack-database-exporter:edge
