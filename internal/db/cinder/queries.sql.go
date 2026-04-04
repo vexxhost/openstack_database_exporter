@@ -194,13 +194,9 @@ const GetProjectQuotaLimits = `-- name: GetProjectQuotaLimits :many
 SELECT
     q.project_id,
     q.resource,
-    q.hard_limit,
-    COALESCE(qu.in_use, 0) as in_use
+    q.hard_limit
 FROM
     quotas q
-    LEFT JOIN quota_usages qu ON q.project_id = qu.project_id
-        AND q.resource = qu.resource
-        AND qu.deleted = 0
 WHERE
     q.deleted = 0
     AND (q.resource IN ('gigabytes', 'backup_gigabytes') OR q.resource LIKE 'gigabytes\_%')
@@ -210,7 +206,6 @@ type GetProjectQuotaLimitsRow struct {
 	ProjectID sql.NullString
 	Resource  string
 	HardLimit sql.NullInt32
-	InUse     int32
 }
 
 func (q *Queries) GetProjectQuotaLimits(ctx context.Context) ([]GetProjectQuotaLimitsRow, error) {
@@ -222,12 +217,48 @@ func (q *Queries) GetProjectQuotaLimits(ctx context.Context) ([]GetProjectQuotaL
 	var items []GetProjectQuotaLimitsRow
 	for rows.Next() {
 		var i GetProjectQuotaLimitsRow
-		if err := rows.Scan(
-			&i.ProjectID,
-			&i.Resource,
-			&i.HardLimit,
-			&i.InUse,
-		); err != nil {
+		if err := rows.Scan(&i.ProjectID, &i.Resource, &i.HardLimit); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const GetProjectQuotaUsages = `-- name: GetProjectQuotaUsages :many
+SELECT
+    qu.project_id,
+    qu.resource,
+    qu.in_use
+FROM
+    quota_usages qu
+WHERE
+    qu.deleted = 0
+    AND qu.resource IN ('gigabytes', 'backup_gigabytes')
+`
+
+type GetProjectQuotaUsagesRow struct {
+	ProjectID sql.NullString
+	Resource  sql.NullString
+	InUse     int32
+}
+
+func (q *Queries) GetProjectQuotaUsages(ctx context.Context) ([]GetProjectQuotaUsagesRow, error) {
+	rows, err := q.db.QueryContext(ctx, GetProjectQuotaUsages)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetProjectQuotaUsagesRow
+	for rows.Next() {
+		var i GetProjectQuotaUsagesRow
+		if err := rows.Scan(&i.ProjectID, &i.Resource, &i.InUse); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

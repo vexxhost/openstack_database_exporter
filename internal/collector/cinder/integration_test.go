@@ -300,4 +300,33 @@ openstack_cinder_volume_type_quota_gigabytes{tenant="proj-002",tenant_id="proj-0
 			t.Fatalf("unexpected per-type quota error: %v", err)
 		}
 	})
+
+	t.Run("usage without explicit quota (issue #92)", func(t *testing.T) {
+		// proj-003 has usage in quota_usages but NO row in quotas table
+		itest.SeedSQL(t, db,
+			`INSERT INTO quota_usages (project_id, resource, in_use, reserved, deleted) VALUES
+			('proj-003', 'gigabytes', 500, 0, 0),
+			('proj-003', 'backup_gigabytes', 30, 0, 0)`,
+		)
+
+		resolver := project.NewResolver(logger, nil, 0)
+		collector := NewLimitsCollector(db, logger, resolver)
+
+		// proj-003 should show usage from quota_usages and default limits (1000)
+		// Also include proj-001 and proj-002 from earlier subtests (shared DB)
+		err := testutil.CollectAndCompare(collector, strings.NewReader(`# HELP openstack_cinder_limits_volume_used_gb limits_volume_used_gb
+# TYPE openstack_cinder_limits_volume_used_gb gauge
+openstack_cinder_limits_volume_used_gb{tenant="proj-001",tenant_id="proj-001"} 250
+openstack_cinder_limits_volume_used_gb{tenant="proj-002",tenant_id="proj-002"} 100
+openstack_cinder_limits_volume_used_gb{tenant="proj-003",tenant_id="proj-003"} 500
+# HELP openstack_cinder_limits_backup_used_gb limits_backup_used_gb
+# TYPE openstack_cinder_limits_backup_used_gb gauge
+openstack_cinder_limits_backup_used_gb{tenant="proj-001",tenant_id="proj-001"} 50
+openstack_cinder_limits_backup_used_gb{tenant="proj-002",tenant_id="proj-002"} 0
+openstack_cinder_limits_backup_used_gb{tenant="proj-003",tenant_id="proj-003"} 30
+`), "openstack_cinder_limits_volume_used_gb", "openstack_cinder_limits_backup_used_gb")
+		if err != nil {
+			t.Fatalf("unexpected error for usage-without-quota: %v", err)
+		}
+	})
 }

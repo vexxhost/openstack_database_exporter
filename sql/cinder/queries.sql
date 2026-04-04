@@ -22,16 +22,23 @@ WHERE
 SELECT
     q.project_id,
     q.resource,
-    q.hard_limit,
-    COALESCE(qu.in_use, 0) as in_use
+    q.hard_limit
 FROM
     quotas q
-    LEFT JOIN quota_usages qu ON q.project_id = qu.project_id
-        AND q.resource = qu.resource
-        AND qu.deleted = 0
 WHERE
     q.deleted = 0
     AND (q.resource IN ('gigabytes', 'backup_gigabytes') OR q.resource LIKE 'gigabytes\_%');
+
+-- name: GetProjectQuotaUsages :many
+SELECT
+    qu.project_id,
+    qu.resource,
+    qu.in_use
+FROM
+    quota_usages qu
+WHERE
+    qu.deleted = 0
+    AND qu.resource IN ('gigabytes', 'backup_gigabytes');
 
 -- name: GetAllProjectQuotas :many
 SELECT

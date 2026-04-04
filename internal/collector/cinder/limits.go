@@ -108,10 +108,17 @@ func (c *LimitsCollector) Describe(ch chan<- *prometheus.Desc) {
 func (c *LimitsCollector) Collect(ch chan<- prometheus.Metric) {
 	ctx := context.Background()
 
-	// Get quota limits from cinder DB
+	// Get quota limits (hard_limit) from quotas table
 	quotaLimits, err := c.queries.GetProjectQuotaLimits(ctx)
 	if err != nil {
 		c.logger.Error("failed to query quota limits", "error", err)
+		return
+	}
+
+	// Get quota usages (in_use) from quota_usages table
+	quotaUsages, err := c.queries.GetProjectQuotaUsages(ctx)
+	if err != nil {
+		c.logger.Error("failed to query quota usages", "error", err)
 		return
 	}
 
@@ -122,7 +129,7 @@ func (c *LimitsCollector) Collect(ch chan<- prometheus.Metric) {
 		return
 	}
 
-	// Build per-project quota data from DB
+	// Build per-project quota limits from quotas table
 	projectQuotas := make(map[string]*projectQuotaInfo)
 	for _, quota := range quotaLimits {
 		pid := quota.ProjectID.String
@@ -134,12 +141,26 @@ func (c *LimitsCollector) Collect(ch chan<- prometheus.Metric) {
 		switch quota.Resource {
 		case "gigabytes":
 			pq.volumeMaxGB = quota.HardLimit.Int32
-			pq.volumeUsedGB = quota.InUse
 			pq.hasVolume = true
 		case "backup_gigabytes":
 			pq.backupMaxGB = quota.HardLimit.Int32
-			pq.backupUsedGB = quota.InUse
 			pq.hasBackup = true
+		}
+	}
+
+	// Overlay usage data from quota_usages table
+	for _, usage := range quotaUsages {
+		pid := usage.ProjectID.String
+		if _, ok := projectQuotas[pid]; !ok {
+			projectQuotas[pid] = &projectQuotaInfo{}
+		}
+		pq := projectQuotas[pid]
+
+		switch usage.Resource.String {
+		case "gigabytes":
+			pq.volumeUsedGB = usage.InUse
+		case "backup_gigabytes":
+			pq.backupUsedGB = usage.InUse
 		}
 	}
 
