@@ -24,7 +24,7 @@ jobs:
         with:
           egress-policy: audit
 
-      - uses: step-security/depot-setup-action@f5473e0857ae0042e260d41d027c9b23ac531127 # v1.6.1
+      - uses: step-security/depot-setup-action@b4aca7ffc00ee3722a62991ae7a7f32f20ea225a # v1.7.1
       - uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5.10.0
         id: meta
         with:
