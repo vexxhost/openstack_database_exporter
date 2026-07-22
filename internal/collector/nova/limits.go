@@ -80,6 +80,18 @@ func NewLimitsCollector(logger *slog.Logger, novaDB *nova.Queries, novaAPIDB *no
 				[]string{"tenant", "tenant_id"},
 				nil,
 			),
+			"limits_pcpus_used": prometheus.NewDesc(
+				prometheus.BuildFQName(Namespace, Subsystem, "limits_pcpus_used"),
+				"limits_pcpus_used",
+				[]string{"tenant", "tenant_id"},
+				nil,
+			),
+			"limits_pcpus_max": prometheus.NewDesc(
+				prometheus.BuildFQName(Namespace, Subsystem, "limits_pcpus_max"),
+				"limits_pcpus_max",
+				[]string{"tenant", "tenant_id"},
+				nil,
+			),
 		},
 	}
 }
@@ -107,6 +119,7 @@ func (c *LimitsCollector) collectLimitsMetrics(ch chan<- prometheus.Metric) erro
 	effectiveDefaults := map[string]float64{
 		"instances": float64(c.defaultQuotas.Instances),
 		"cores":     float64(c.defaultQuotas.Cores),
+		"pcpus":     float64(c.defaultQuotas.PinnedCores),
 		"ram":       float64(c.defaultQuotas.RAM),
 	}
 
@@ -181,6 +194,7 @@ func (c *LimitsCollector) collectLimitsMetrics(ch chan<- prometheus.Metric) erro
 
 	// Get usage from placement (authoritative source for quota usage)
 	vcpusUsedByProject := make(map[string]float64)
+	pcpusUsedByProject := make(map[string]float64)
 	memoryUsedByProject := make(map[string]float64)
 	instanceCountByProject := make(map[string]float64)
 
@@ -195,6 +209,8 @@ func (c *LimitsCollector) collectLimitsMetrics(ch chan<- prometheus.Metric) erro
 				switch alloc.ResourceType.String {
 				case "VCPU":
 					vcpusUsedByProject[alloc.ProjectID] = used
+				case "PCPU":
+					pcpusUsedByProject[alloc.ProjectID] = used
 				case "MEMORY_MB":
 					memoryUsedByProject[alloc.ProjectID] = used
 				}
@@ -274,6 +290,25 @@ func (c *LimitsCollector) collectLimitsMetrics(ch chan<- prometheus.Metric) erro
 			c.limitsMetrics["limits_vcpus_used"],
 			prometheus.GaugeValue,
 			vcpusUsedByProject[projectID],
+			tenantName, projectID,
+		)
+
+		// pCPUs (pinned CPUs from placement, separate quota from vCPUs)
+		pcpusMax := effectiveDefaults["pcpus"]
+		if projectHasQuota[projectID] != nil && projectHasQuota[projectID]["pcpus"] {
+			pcpusMax = limitsByProject[projectID]["pcpus"]
+		}
+
+		ch <- prometheus.MustNewConstMetric(
+			c.limitsMetrics["limits_pcpus_max"],
+			prometheus.GaugeValue,
+			pcpusMax,
+			tenantName, projectID,
+		)
+		ch <- prometheus.MustNewConstMetric(
+			c.limitsMetrics["limits_pcpus_used"],
+			prometheus.GaugeValue,
+			pcpusUsedByProject[projectID],
 			tenantName, projectID,
 		)
 	}

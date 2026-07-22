@@ -99,6 +99,42 @@ func (q *Queries) GetGroupMetrics(ctx context.Context) ([]GetGroupMetricsRow, er
 	return items, nil
 }
 
+const GetProjectTags = `-- name: GetProjectTags :many
+SELECT
+    pt.project_id,
+    pt.name
+FROM project_tag pt
+ORDER BY pt.project_id, pt.name
+`
+
+type GetProjectTagsRow struct {
+	ProjectID string
+	Name      string
+}
+
+func (q *Queries) GetProjectTags(ctx context.Context) ([]GetProjectTagsRow, error) {
+	rows, err := q.db.QueryContext(ctx, GetProjectTags)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetProjectTagsRow
+	for rows.Next() {
+		var i GetProjectTagsRow
+		if err := rows.Scan(&i.ProjectID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const GetProjectLimits = `-- name: GetProjectLimits :many
 SELECT
     l.project_id,

@@ -13,6 +13,13 @@ LEFT JOIN project_tag pt ON p.id = pt.project_id
 WHERE p.is_domain = 0
 GROUP BY p.id, p.name, p.description, p.enabled, p.domain_id, p.parent_id, p.is_domain;
 
+-- name: GetProjectTags :many
+SELECT
+    pt.project_id,
+    pt.name
+FROM project_tag pt
+ORDER BY pt.project_id, pt.name;
+
 -- name: GetDomainMetrics :many
 SELECT 
     id,

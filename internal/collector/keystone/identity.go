@@ -17,24 +17,26 @@ var (
 )
 
 type IdentityCollector struct {
-	db                *sql.DB
-	logger            *slog.Logger
-	domainsCollector  *DomainsCollector
-	projectsCollector *ProjectsCollector
-	groupsCollector   *GroupsCollector
-	regionsCollector  *RegionsCollector
-	usersCollector    *UsersCollector
+	db                   *sql.DB
+	logger               *slog.Logger
+	domainsCollector     *DomainsCollector
+	projectsCollector    *ProjectsCollector
+	projectTagsCollector *ProjectTagsCollector
+	groupsCollector      *GroupsCollector
+	regionsCollector     *RegionsCollector
+	usersCollector       *UsersCollector
 }
 
 func NewIdentityCollector(db *sql.DB, logger *slog.Logger) *IdentityCollector {
 	return &IdentityCollector{
-		db:                db,
-		logger:            logger,
-		domainsCollector:  NewDomainsCollector(db, logger),
-		projectsCollector: NewProjectsCollector(db, logger),
-		groupsCollector:   NewGroupsCollector(db, logger),
-		regionsCollector:  NewRegionsCollector(db, logger),
-		usersCollector:    NewUsersCollector(db, logger),
+		db:                   db,
+		logger:               logger,
+		domainsCollector:     NewDomainsCollector(db, logger),
+		projectsCollector:    NewProjectsCollector(db, logger),
+		projectTagsCollector: NewProjectTagsCollector(db, logger),
+		groupsCollector:      NewGroupsCollector(db, logger),
+		regionsCollector:     NewRegionsCollector(db, logger),
+		usersCollector:       NewUsersCollector(db, logger),
 	}
 }
 
@@ -42,6 +44,7 @@ func (c *IdentityCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- keystoneUpDesc
 	c.domainsCollector.Describe(ch)
 	c.projectsCollector.Describe(ch)
+	c.projectTagsCollector.Describe(ch)
 	c.groupsCollector.Describe(ch)
 	c.regionsCollector.Describe(ch)
 	c.usersCollector.Describe(ch)
@@ -56,6 +59,9 @@ func (c *IdentityCollector) Collect(ch chan<- prometheus.Metric) {
 		hasError = true
 	}
 	if err := c.projectsCollector.Collect(ch); err != nil {
+		hasError = true
+	}
+	if err := c.projectTagsCollector.Collect(ch); err != nil {
 		hasError = true
 	}
 	if err := c.groupsCollector.Collect(ch); err != nil {

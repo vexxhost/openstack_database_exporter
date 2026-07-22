@@ -48,6 +48,12 @@ func NewQuotasCollector(logger *slog.Logger, novaDB *nova.Queries, novaAPIDB *no
 				[]string{"tenant", "tenant_id", "type"},
 				nil,
 			),
+			"quota_pcpus": prometheus.NewDesc(
+				prometheus.BuildFQName(Namespace, Subsystem, "quota_pcpus"),
+				"quota_pcpus",
+				[]string{"tenant", "tenant_id", "type"},
+				nil,
+			),
 			"quota_fixed_ips": prometheus.NewDesc(
 				prometheus.BuildFQName(Namespace, Subsystem, "quota_fixed_ips"),
 				"quota_fixed_ips",
@@ -147,6 +153,7 @@ func (c *QuotasCollector) collectQuotaMetrics(ch chan<- prometheus.Metric) error
 
 	// Get usage from placement (authoritative source, quota_usages table is often empty)
 	vcpusUsedByProject := make(map[string]float64)
+	pcpusUsedByProject := make(map[string]float64)
 	memoryUsedByProject := make(map[string]float64)
 	instanceCountByProject := make(map[string]float64)
 	// DISK_GB usage from placement
@@ -162,6 +169,8 @@ func (c *QuotasCollector) collectQuotaMetrics(ch chan<- prometheus.Metric) error
 				switch alloc.ResourceType.String {
 				case "VCPU":
 					vcpusUsedByProject[alloc.ProjectID] = used
+				case "PCPU":
+					pcpusUsedByProject[alloc.ProjectID] = used
 				case "MEMORY_MB":
 					memoryUsedByProject[alloc.ProjectID] = used
 				case "DISK_GB":
@@ -189,6 +198,7 @@ func (c *QuotasCollector) collectQuotaMetrics(ch chan<- prometheus.Metric) error
 	// defaults for the remaining resources.
 	defaultQuotaMap := map[string]float64{
 		"cores":                       float64(c.defaultQuotas.Cores),
+		"pcpus":                       float64(c.defaultQuotas.PinnedCores),
 		"fixed_ips":                   -1,
 		"floating_ips":                -1,
 		"injected_file_content_bytes": 10240,
@@ -311,6 +321,8 @@ func (c *QuotasCollector) collectQuotaMetrics(ch chan<- prometheus.Metric) error
 			switch quotaType {
 			case "cores":
 				usage = vcpusUsedByProject[projectID]
+			case "pcpus":
+				usage = pcpusUsedByProject[projectID]
 			case "ram":
 				usage = memoryUsedByProject[projectID]
 			case "instances":
