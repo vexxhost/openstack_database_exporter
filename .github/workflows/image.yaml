@@ -29,7 +29,7 @@ jobs:
         id: meta
         with:
           images: ghcr.io/vexxhost/openstack-database-exporter
-      - uses: step-security/docker-login-action@870af644803bf9f204aed474adbad2958fec048b # v4.1.0
+      - uses: step-security/docker-login-action@164e21d7e52229904128e2f946001cb88278c33d # v4.2.0
         if: github.event_name != 'pull_request'
         with:
           registry: ghcr.io
