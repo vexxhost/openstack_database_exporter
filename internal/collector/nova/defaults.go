@@ -3,17 +3,19 @@ package nova
 // DefaultQuotas holds configurable Nova quota defaults used as fallback
 // when no explicit per-project quota and no quota_classes entry exists in the DB.
 type DefaultQuotas struct {
-	Instances int
-	Cores     int
-	RAM       int
+	Instances   int
+	Cores       int
+	PinnedCores int
+	RAM         int
 }
 
 // DefaultDefaultQuotas returns the Nova upstream defaults.
 func DefaultDefaultQuotas() DefaultQuotas {
 	return DefaultQuotas{
-		Instances: 10,
-		Cores:     20,
-		RAM:       51200,
+		Instances:   10,
+		Cores:       20,
+		PinnedCores: 0,
+		RAM:         51200,
 	}
 }
 
@@ -25,6 +27,8 @@ func unifiedLimitToNova(resource string) (string, bool) {
 		return "instances", true
 	case "class:VCPU":
 		return "cores", true
+	case "class:PCPU":
+		return "pcpus", true
 	case "class:MEMORY_MB":
 		return "ram", true
 	default:

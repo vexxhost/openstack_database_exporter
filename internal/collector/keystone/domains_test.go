@@ -19,15 +19,15 @@ func TestDomainsCollector(t *testing.T) {
 			SetupMock: func(mock sqlmock.Sqlmock) {
 				// Setup domain metrics query
 				domainRows := sqlmock.NewRows([]string{
-					"id", "name", "description", "enabled",
+					"id", "name", "description", "enabled", "tags",
 				}).AddRow(
-					"default", "Default", "Owns users and tenants (i.e. projects) available on Identity API v2.", 1,
+					"default", "Default", "Owns users and tenants (i.e. projects) available on Identity API v2.", 1, "",
 				)
 				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetDomainMetrics)).WillReturnRows(domainRows)
 			},
 			ExpectedMetrics: `# HELP openstack_identity_domain_info domain_info
 # TYPE openstack_identity_domain_info gauge
-openstack_identity_domain_info{description="Owns users and tenants (i.e. projects) available on Identity API v2.",enabled="true",id="default",name="Default"} 1
+openstack_identity_domain_info{description="Owns users and tenants (i.e. projects) available on Identity API v2.",enabled="true",id="default",name="Default",tags=""} 1
 # HELP openstack_identity_domains domains
 # TYPE openstack_identity_domains gauge
 openstack_identity_domains 1
@@ -38,7 +38,7 @@ openstack_identity_domains 1
 			SetupMock: func(mock sqlmock.Sqlmock) {
 				// Setup empty domain metrics query
 				domainRows := sqlmock.NewRows([]string{
-					"id", "name", "description", "enabled",
+					"id", "name", "description", "enabled", "tags",
 				})
 				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetDomainMetrics)).WillReturnRows(domainRows)
 			},
@@ -52,15 +52,15 @@ openstack_identity_domains 0
 			SetupMock: func(mock sqlmock.Sqlmock) {
 				// Setup domain metrics query with disabled domain
 				domainRows := sqlmock.NewRows([]string{
-					"id", "name", "description", "enabled",
+					"id", "name", "description", "enabled", "tags",
 				}).AddRow(
-					"disabled-domain", "Disabled Domain", "A disabled domain", 0,
+					"disabled-domain", "Disabled Domain", "A disabled domain", 0, "",
 				)
 				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetDomainMetrics)).WillReturnRows(domainRows)
 			},
 			ExpectedMetrics: `# HELP openstack_identity_domain_info domain_info
 # TYPE openstack_identity_domain_info gauge
-openstack_identity_domain_info{description="A disabled domain",enabled="false",id="disabled-domain",name="Disabled Domain"} 1
+openstack_identity_domain_info{description="A disabled domain",enabled="false",id="disabled-domain",name="Disabled Domain",tags=""} 1
 # HELP openstack_identity_domains domains
 # TYPE openstack_identity_domains gauge
 openstack_identity_domains 1
@@ -71,15 +71,15 @@ openstack_identity_domains 1
 			SetupMock: func(mock sqlmock.Sqlmock) {
 				// Setup domain metrics query with null enabled
 				domainRows := sqlmock.NewRows([]string{
-					"id", "name", "description", "enabled",
+					"id", "name", "description", "enabled", "tags",
 				}).AddRow(
-					"domain-1", "Domain 1", "Domain description", nil,
+					"domain-1", "Domain 1", "Domain description", nil, "",
 				)
 				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetDomainMetrics)).WillReturnRows(domainRows)
 			},
 			ExpectedMetrics: `# HELP openstack_identity_domain_info domain_info
 # TYPE openstack_identity_domain_info gauge
-openstack_identity_domain_info{description="Domain description",enabled="false",id="domain-1",name="Domain 1"} 1
+openstack_identity_domain_info{description="Domain description",enabled="false",id="domain-1",name="Domain 1",tags=""} 1
 # HELP openstack_identity_domains domains
 # TYPE openstack_identity_domains gauge
 openstack_identity_domains 1

@@ -93,6 +93,10 @@ var (
 		"nova.default-quota-cores",
 		"Default Nova cores (vCPUs) quota when no quota_classes entry exists in the DB.",
 	).Default("20").Envar("NOVA_DEFAULT_QUOTA_CORES").Int()
+	novaDefaultPinnedCores = kingpin.Flag(
+		"nova.default-quota-pinned-cores",
+		"Default Nova pinned cores (pCPUs) quota when no quota_classes entry exists in the DB.",
+	).Default("0").Envar("NOVA_DEFAULT_QUOTA_PINNED_CORES").Int()
 	novaDefaultRAM = kingpin.Flag(
 		"nova.default-quota-ram",
 		"Default Nova RAM quota (in MB) when no quota_classes entry exists in the DB.",
@@ -133,9 +137,10 @@ func main() {
 		NovaAPIDatabaseURL:   *novaAPIDatabaseURL,
 		ProjectCacheTTL:      *projectCacheTTL,
 		NovaDefaultQuotas: nova.DefaultQuotas{
-			Instances: *novaDefaultInstances,
-			Cores:     *novaDefaultCores,
-			RAM:       *novaDefaultRAM,
+			Instances:   *novaDefaultInstances,
+			Cores:       *novaDefaultCores,
+			PinnedCores: *novaDefaultPinnedCores,
+			RAM:         *novaDefaultRAM,
 		},
 		KeystoneRegion: *keystoneRegion,
 	}, logger)

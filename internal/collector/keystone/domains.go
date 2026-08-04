@@ -3,6 +3,7 @@ package keystone
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -25,6 +26,7 @@ var (
 			"enabled",
 			"id",
 			"name",
+			"tags",
 		},
 		nil,
 	)
@@ -76,6 +78,11 @@ func (c *DomainsCollector) Collect(ch chan<- prometheus.Metric) error {
 			enabled = "true"
 		}
 
+		tags := ""
+		if domain.Tags != nil {
+			tags = fmt.Sprintf("%s", domain.Tags)
+		}
+
 		ch <- prometheus.MustNewConstMetric(
 			domainsInfoDesc,
 			prometheus.GaugeValue,
@@ -84,6 +91,7 @@ func (c *DomainsCollector) Collect(ch chan<- prometheus.Metric) error {
 			enabled,
 			domain.ID,
 			domain.Name,
+			tags,
 		)
 	}
 

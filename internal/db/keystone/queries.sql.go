@@ -12,12 +12,15 @@ import (
 
 const GetDomainMetrics = `-- name: GetDomainMetrics :many
 SELECT 
-    id,
-    name,
-    COALESCE(description, '') as description,
-    enabled
-FROM project 
-WHERE is_domain = 1 AND id != '<<keystone.domain.root>>'
+    p.id,
+    p.name,
+    COALESCE(p.description, '') as description,
+    p.enabled,
+    CAST(COALESCE(GROUP_CONCAT(pt.name SEPARATOR ','), '') AS CHAR) as tags
+FROM project p
+LEFT JOIN project_tag pt ON p.id = pt.project_id
+WHERE p.is_domain = 1 AND p.id != '<<keystone.domain.root>>'
+GROUP BY p.id, p.name, p.description, p.enabled
 `
 
 type GetDomainMetricsRow struct {
@@ -25,6 +28,7 @@ type GetDomainMetricsRow struct {
 	Name        string
 	Description string
 	Enabled     sql.NullBool
+	Tags        interface{}
 }
 
 func (q *Queries) GetDomainMetrics(ctx context.Context) ([]GetDomainMetricsRow, error) {
@@ -41,6 +45,7 @@ func (q *Queries) GetDomainMetrics(ctx context.Context) ([]GetDomainMetricsRow, 
 			&i.Name,
 			&i.Description,
 			&i.Enabled,
+			&i.Tags,
 		); err != nil {
 			return nil, err
 		}

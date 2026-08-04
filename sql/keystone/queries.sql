@@ -15,12 +15,15 @@ GROUP BY p.id, p.name, p.description, p.enabled, p.domain_id, p.parent_id, p.is_
 
 -- name: GetDomainMetrics :many
 SELECT 
-    id,
-    name,
-    COALESCE(description, '') as description,
-    enabled
-FROM project 
-WHERE is_domain = 1 AND id != '<<keystone.domain.root>>';
+    p.id,
+    p.name,
+    COALESCE(p.description, '') as description,
+    p.enabled,
+    CAST(COALESCE(GROUP_CONCAT(pt.name SEPARATOR ','), '') AS CHAR) as tags
+FROM project p
+LEFT JOIN project_tag pt ON p.id = pt.project_id
+WHERE p.is_domain = 1 AND p.id != '<<keystone.domain.root>>'
+GROUP BY p.id, p.name, p.description, p.enabled;
 
 -- name: GetUserMetrics :many
 SELECT 
