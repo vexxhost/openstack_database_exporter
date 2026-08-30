@@ -44,8 +44,9 @@ func TestIntegration_VolumesCollector(t *testing.T) {
 			('vol-001', 'boot-vol', 40, 'in-use', 'nova', 1, 'proj-001', 'user-001', 'vtype-001', 0),
 			('vol-002', 'data-vol', 100, 'available', 'nova', 0, 'proj-001', 'user-001', 'vtype-002', 0),
 			('vol-003', 'deleted-vol', 50, 'deleted', 'nova', 0, 'proj-002', 'user-002', 'vtype-001', 1)`,
-			`INSERT INTO volume_attachment (id, volume_id, instance_uuid, deleted) VALUES
-			('att-001', 'vol-001', 'server-001', 0)`,
+			`INSERT INTO volume_attachment (id, volume_id, instance_uuid, deleted, attach_status) VALUES
+			('att-001', 'vol-001', 'server-001', 0, 'attached'),
+			('att-002', 'vol-001', 'server-001', 0, 'detached')`,
 		)
 
 		collector := NewVolumesCollector(db, logger)

@@ -86,7 +86,7 @@ SELECT
 FROM
     volumes v USE INDEX (volumes_service_uuid_idx)
     LEFT JOIN volume_types vt ON v.volume_type_id = vt.id
-    LEFT JOIN volume_attachment va ON v.id = va.volume_id AND va.deleted = 0
+    LEFT JOIN volume_attachment va ON v.id = va.volume_id AND va.deleted = 0 AND va.attach_status = 'attached'
 WHERE
     (v.service_uuid IS NULL OR v.service_uuid IS NOT NULL)
     AND v.deleted = 0;
