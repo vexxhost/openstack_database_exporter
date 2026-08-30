@@ -61,32 +61,32 @@ var (
 	taskStateOverrides = map[string]map[string]string{
 		"active": {
 			"shelving":                      "SHELVED",
-			"shelving_image_pending_upload":  "SHELVED",
-			"shelving_image_uploading":       "SHELVED",
-			"shelving_offloading":            "SHELVED",
-			"rebuilding":                     "REBUILD",
-			"rebuild_block_device_mapping":   "REBUILD",
-			"rebuild_spawning":               "REBUILD",
-			"migrating":                      "MIGRATING",
-			"resize_prep":                    "RESIZE",
-			"resize_migrating":               "RESIZE",
-			"resize_migrated":                "RESIZE",
-			"resize_finish":                  "RESIZE",
+			"shelving_image_pending_upload": "SHELVED",
+			"shelving_image_uploading":      "SHELVED",
+			"shelving_offloading":           "SHELVED",
+			"rebuilding":                    "REBUILD",
+			"rebuild_block_device_mapping":  "REBUILD",
+			"rebuild_spawning":              "REBUILD",
+			"migrating":                     "MIGRATING",
+			"resize_prep":                   "RESIZE",
+			"resize_migrating":              "RESIZE",
+			"resize_migrated":               "RESIZE",
+			"resize_finish":                 "RESIZE",
 		},
 		"stopped": {
-			"resize_prep":                    "RESIZE",
-			"resize_migrating":               "RESIZE",
-			"resize_migrated":                "RESIZE",
-			"resize_finish":                  "RESIZE",
-			"rebuilding":                     "REBUILD",
-			"rebuild_block_device_mapping":   "REBUILD",
-			"rebuild_spawning":               "REBUILD",
+			"resize_prep":                  "RESIZE",
+			"resize_migrating":             "RESIZE",
+			"resize_migrated":              "RESIZE",
+			"resize_finish":                "RESIZE",
+			"rebuilding":                   "REBUILD",
+			"rebuild_block_device_mapping": "REBUILD",
+			"rebuild_spawning":             "REBUILD",
 		},
 		"resized": {
-			"resize_reverting":               "REVERT_RESIZE",
+			"resize_reverting": "REVERT_RESIZE",
 		},
 		"paused": {
-			"migrating":                      "MIGRATING",
+			"migrating": "MIGRATING",
 		},
 	}
 )
@@ -120,6 +120,12 @@ func NewServerCollector(logger *slog.Logger, novaDB *nova.Queries, novaAPIDB *no
 				prometheus.BuildFQName(Namespace, Subsystem, "server_status"),
 				"server_status",
 				[]string{"address_ipv4", "address_ipv6", "availability_zone", "flavor_id", "host_id", "hypervisor_hostname", "id", "instance_libvirt", "name", "status", "tenant_id", "user_id", "uuid"},
+				nil,
+			),
+			"server_task_state": prometheus.NewDesc(
+				prometheus.BuildFQName(Namespace, Subsystem, "server_task_state"),
+				"server_task_state",
+				[]string{"id", "task_state"},
 				nil,
 			),
 			"total_vms": prometheus.NewDesc(
@@ -227,6 +233,20 @@ func (c *ServerCollector) collectServerMetrics(ch chan<- prometheus.Metric) erro
 			instance.ProjectID.String,
 			instance.UserID.String,
 			instance.Uuid,
+		)
+
+		taskState := instance.TaskState.String
+		taskStateValue := 0.0
+		if taskState != "" {
+			taskStateValue = 1
+		}
+
+		ch <- prometheus.MustNewConstMetric(
+			c.serverMetrics["server_task_state"],
+			prometheus.GaugeValue,
+			taskStateValue,
+			instance.Uuid,
+			taskState,
 		)
 	}
 

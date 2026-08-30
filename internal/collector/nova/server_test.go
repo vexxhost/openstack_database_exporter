@@ -2,12 +2,16 @@ package nova
 
 import (
 	"database/sql"
+	"io"
 	"log/slog"
+	"strings"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/prometheus/client_golang/prometheus"
+	promtestutil "github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	novadb "github.com/vexxhost/openstack_database_exporter/internal/db/nova"
 	novaapidb "github.com/vexxhost/openstack_database_exporter/internal/db/nova_api"
 	"github.com/vexxhost/openstack_database_exporter/internal/testutil"
@@ -65,6 +69,54 @@ func TestServerCollector(t *testing.T) {
 		collector := NewServerCollector(logger, novadb.New(db), novaapidb.New(db))
 		return &serverCollectorWrapper{collector}
 	})
+}
+
+func TestServerCollectorTaskStateMetric(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer func() { _ = db.Close() }()
+
+	instanceColumns := []string{
+		"id", "uuid", "display_name", "user_id", "project_id", "host",
+		"availability_zone", "vm_state", "power_state", "task_state",
+		"memory_mb", "vcpus", "root_gb", "ephemeral_gb",
+		"launched_at", "terminated_at", "instance_type_id", "deleted",
+	}
+	instanceRows := sqlmock.NewRows(instanceColumns).
+		AddRow(
+			1, "ec2917d8-cbd4-49b2-b204-f2c0a81cbe3b", "server-without-task", "user-1", "project-1", "compute-1",
+			"nova", "active", 1, nil,
+			2048, 2, 20, 0,
+			nil, nil, 1, 0,
+		).
+		AddRow(
+			2, "f3e2e9b6-3b7d-4b1e-9e0d-0f6b3b3b1b1b", "server-with-task", "user-1", "project-1", "compute-2",
+			"nova", "active", 1, "spawning",
+			4096, 4, 40, 0,
+			nil, nil, 2, 0,
+		)
+	mock.ExpectQuery("SELECT (.+) FROM instances").WillReturnRows(instanceRows)
+
+	flavorColumns := []string{
+		"id", "flavorid", "name", "vcpus", "memory_mb", "root_gb",
+		"ephemeral_gb", "swap", "rxtx_factor", "disabled", "is_public",
+	}
+	mock.ExpectQuery("SELECT (.+) FROM flavors").WillReturnRows(sqlmock.NewRows(flavorColumns))
+
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	collector := NewServerCollector(logger, novadb.New(db), novaapidb.New(db))
+
+	err = promtestutil.CollectAndCompare(
+		&serverCollectorWrapper{collector},
+		strings.NewReader(`# HELP openstack_nova_server_task_state server_task_state
+# TYPE openstack_nova_server_task_state gauge
+openstack_nova_server_task_state{id="ec2917d8-cbd4-49b2-b204-f2c0a81cbe3b",task_state=""} 0
+openstack_nova_server_task_state{id="f3e2e9b6-3b7d-4b1e-9e0d-0f6b3b3b1b1b",task_state="spawning"} 1
+`),
+		"openstack_nova_server_task_state",
+	)
+	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
 type serverCollectorWrapper struct {

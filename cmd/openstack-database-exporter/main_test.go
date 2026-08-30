@@ -378,6 +378,7 @@ func TestIntegration_E2E_FullExporter(t *testing.T) {
 	assertGaugeValue(t, families, "openstack_nova_flavors", 2)
 	assertMetricExists(t, families, "openstack_nova_flavor")
 	assertMetricExists(t, families, "openstack_nova_server_status")
+	assertMetricExists(t, families, "openstack_nova_server_task_state")
 	assertGaugeValue(t, families, "openstack_nova_total_vms", 2)
 	assertMetricExists(t, families, "openstack_nova_server_local_gb")
 	assertMetricExists(t, families, "openstack_nova_running_vms")
