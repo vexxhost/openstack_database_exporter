@@ -3,8 +3,7 @@
 -- For the quotas query
 CREATE INDEX IF NOT EXISTS ix_quotas_deleted_resource ON quotas(deleted, resource);
 
--- For the volumes query (USE INDEX hint in query requires this)
-CREATE INDEX IF NOT EXISTS volumes_service_uuid_idx ON volumes(service_uuid);
+-- For the volumes query
 CREATE INDEX IF NOT EXISTS ix_volumes_deleted ON volumes(deleted);
 CREATE INDEX IF NOT EXISTS ix_volume_types_id_deleted ON volume_types(id, deleted);
 CREATE INDEX IF NOT EXISTS ix_volume_attachment_volume_id_deleted ON volume_attachment(volume_id, deleted);
