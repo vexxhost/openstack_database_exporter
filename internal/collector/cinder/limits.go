@@ -10,11 +10,6 @@ import (
 	cinderdb "github.com/vexxhost/openstack_database_exporter/internal/db/cinder"
 )
 
-const (
-	// Cinder default quota for gigabytes and backup_gigabytes
-	cinderDefaultGigabytesQuota = 1000
-)
-
 var (
 	limitsVolumeMaxGbDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(Namespace, Subsystem, "limits_volume_max_gb"),
@@ -129,6 +124,19 @@ func (c *LimitsCollector) Collect(ch chan<- prometheus.Metric) {
 		return
 	}
 
+	// Get default quota limits from quota_classes table
+	defaultQuotaRows, err := c.queries.GetDefaultQuotaLimits(ctx)
+	if err != nil {
+		c.logger.Error("failed to query default quota limits", "error", err)
+		return
+	}
+	defaultQuotas := make(map[string]int32)
+	for _, d := range defaultQuotaRows {
+		if d.HardLimit.Valid {
+			defaultQuotas[d.Resource] = d.HardLimit.Int32
+		}
+	}
+
 	// Build per-project quota limits from quotas table
 	projectQuotas := make(map[string]*projectQuotaInfo)
 	for _, quota := range quotaLimits {
@@ -164,19 +172,38 @@ func (c *LimitsCollector) Collect(ch chan<- prometheus.Metric) {
 		}
 	}
 
-	// Build the full set of project IDs: union of DB projects and keystone projects
+	// Build the full set of project IDs: only projects with quotas or usage
+	// that exist in Keystone. If Keystone is unavailable (no projects cached),
+	// fall back to including all DB projects.
 	allProjectIDs := make(map[string]string) // projectID -> projectName
+	keystoneProjects := c.projectResolver.AllProjects()
+	keystoneAvailable := len(keystoneProjects) > 0
 
-	// Add projects from DB quotas (resolve name via keystone if available)
 	for pid := range projectQuotas {
-		name, _ := c.projectResolver.Resolve(pid)
-		allProjectIDs[pid] = name
+		if _, exists := keystoneProjects[pid]; exists || !keystoneAvailable {
+			name, _ := c.projectResolver.Resolve(pid)
+			allProjectIDs[pid] = name
+		}
+	}
+	for _, usage := range quotaUsages {
+		pid := usage.ProjectID.String
+		if _, alreadyAdded := allProjectIDs[pid]; alreadyAdded {
+			continue
+		}
+		if _, exists := keystoneProjects[pid]; exists || !keystoneAvailable {
+			name, _ := c.projectResolver.Resolve(pid)
+			allProjectIDs[pid] = name
+		}
 	}
 
-	// Add projects from keystone that may not have explicit quotas
-	for pid, info := range c.projectResolver.AllProjects() {
-		if _, exists := allProjectIDs[pid]; !exists {
-			allProjectIDs[pid] = info.Name
+	// Also include all Keystone projects that don't have explicit cinder quotas,
+	// using default values. This matches the old API-based exporter which
+	// iterated all projects and returned defaults for those without quotas.
+	if keystoneAvailable {
+		for pid, info := range keystoneProjects {
+			if _, alreadyAdded := allProjectIDs[pid]; !alreadyAdded {
+				allProjectIDs[pid] = info.Name
+			}
 		}
 	}
 
@@ -188,7 +215,10 @@ func (c *LimitsCollector) Collect(ch chan<- prometheus.Metric) {
 		}
 
 		// Volume limits
-		volumeMax := int32(cinderDefaultGigabytesQuota)
+		volumeMax, ok := defaultQuotas["gigabytes"]
+		if !ok {
+			volumeMax = -1
+		}
 		if pq.hasVolume {
 			volumeMax = pq.volumeMaxGB
 		}
@@ -207,8 +237,11 @@ func (c *LimitsCollector) Collect(ch chan<- prometheus.Metric) {
 			projectID,
 		)
 
-		// Backup limits (default 1000, 0 used)
-		backupMax := int32(cinderDefaultGigabytesQuota)
+		// Backup limits
+		backupMax, ok := defaultQuotas["backup_gigabytes"]
+		if !ok {
+			backupMax = -1
+		}
 		if pq.hasBackup {
 			backupMax = pq.backupMaxGB
 		}
@@ -233,7 +266,10 @@ func (c *LimitsCollector) Collect(ch chan<- prometheus.Metric) {
 
 			// Check if there's an explicit per-type quota (e.g., "gigabytes_standard")
 			perTypeResource := "gigabytes_" + vtName
-			perTypeLimit := int32(-1) // default
+			perTypeLimit, ok := defaultQuotas[perTypeResource]
+			if !ok {
+				perTypeLimit = -1
+			}
 			for _, quota := range quotaLimits {
 				if quota.ProjectID.String == projectID && quota.Resource == perTypeResource {
 					perTypeLimit = quota.HardLimit.Int32

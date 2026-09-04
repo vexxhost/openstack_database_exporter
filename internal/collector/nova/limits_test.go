@@ -65,7 +65,7 @@ func TestLimitsCollector(t *testing.T) {
 	}
 
 	testutil.RunCollectorTests(t, tests, func(db *sql.DB, logger *slog.Logger) prometheus.Collector {
-		collector := NewLimitsCollector(logger, novadb.New(db), novaapidb.New(db), nil, project.NewResolver(logger, nil, 0))
+		collector := NewLimitsCollector(logger, novadb.New(db), novaapidb.New(db), nil, project.NewResolver(logger, nil, 0), DefaultDefaultQuotas(), nil, "")
 		return &limitsCollectorWrapper{collector}
 	})
 }

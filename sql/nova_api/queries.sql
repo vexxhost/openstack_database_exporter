@@ -57,3 +57,28 @@ SELECT
     until_refresh,
     user_id
 FROM quota_usages;
+
+-- name: GetHostAvailabilityZones :many
+SELECT DISTINCT
+    ah.host,
+    am.value as availability_zone
+FROM aggregate_hosts ah
+JOIN aggregate_metadata am ON ah.aggregate_id = am.aggregate_id
+WHERE am.`key` = 'availability_zone'
+  AND am.value IS NOT NULL
+  AND am.value != '';
+
+-- name: GetAggregateMetadata :many
+SELECT
+    am.aggregate_id,
+    am.`key`,
+    am.value
+FROM aggregate_metadata am;
+
+-- name: GetAggregateHostMap :many
+SELECT
+    ah.host,
+    a.id as aggregate_id,
+    a.name as aggregate_name
+FROM aggregate_hosts ah
+JOIN aggregates a ON ah.aggregate_id = a.id;

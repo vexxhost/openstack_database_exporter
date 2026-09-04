@@ -56,6 +56,27 @@ var (
 		},
 		nil,
 	)
+
+	resourceGenerationDesc = prometheus.NewDesc(
+		prometheus.BuildFQName(Namespace, Subsystem, "resource_generation"),
+		"resource_generation",
+		[]string{
+			"hostname",
+			"resourcetype",
+		},
+		nil,
+	)
+
+	resourceProviderAllocationsDesc = prometheus.NewDesc(
+		prometheus.BuildFQName(Namespace, Subsystem, "resource_provider_allocations"),
+		"resource_provider_allocations",
+		[]string{
+			"hostname",
+			"resourcetype",
+			"uuid",
+		},
+		nil,
+	)
 )
 
 type ResourcesCollector struct {
@@ -80,8 +101,10 @@ func (c *ResourcesCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- placementUpDesc
 	ch <- resourceTotalDesc
 	ch <- resourceAllocationRatioDesc
+	ch <- resourceGenerationDesc
 	ch <- resourceReservedDesc
 	ch <- resourceUsageDesc
+	ch <- resourceProviderAllocationsDesc
 }
 
 func (c *ResourcesCollector) Collect(ch chan<- prometheus.Metric) {
@@ -125,6 +148,14 @@ func (c *ResourcesCollector) Collect(ch chan<- prometheus.Metric) {
 		)
 
 		ch <- prometheus.MustNewConstMetric(
+			resourceGenerationDesc,
+			prometheus.GaugeValue,
+			float64(resource.Generation.Int32),
+			hostname,
+			resourceType,
+		)
+
+		ch <- prometheus.MustNewConstMetric(
 			resourceReservedDesc,
 			prometheus.GaugeValue,
 			float64(resource.Reserved),
@@ -139,5 +170,27 @@ func (c *ResourcesCollector) Collect(ch chan<- prometheus.Metric) {
 			hostname,
 			resourceType,
 		)
+	}
+
+	// Emit per-consumer resource_provider_allocations
+	allocations, err := c.queries.GetProviderAllocations(ctx)
+	if err != nil {
+		c.logger.Error("Failed to get provider allocations", "error", err)
+	} else {
+		for _, alloc := range allocations {
+			hostname := ""
+			if alloc.Hostname.Valid {
+				hostname = alloc.Hostname.String
+			}
+
+			ch <- prometheus.MustNewConstMetric(
+				resourceProviderAllocationsDesc,
+				prometheus.GaugeValue,
+				float64(alloc.Used),
+				hostname,
+				alloc.ResourceType,
+				alloc.Uuid,
+			)
+		}
 	}
 }

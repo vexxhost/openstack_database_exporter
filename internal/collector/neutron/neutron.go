@@ -36,6 +36,7 @@ func RegisterCollectors(registry *prometheus.Registry, databaseURL string, proje
 	registry.MustRegister(NewSecurityGroupCollector(conn, logger))
 	registry.MustRegister(NewSubnetCollector(conn, logger))
 	registry.MustRegister(NewQuotaCollector(conn, logger, projectResolver))
+	registry.MustRegister(NewVPNCollector(conn, logger))
 
 	logger.Info("Registered collectors", "service", "neutron")
 }

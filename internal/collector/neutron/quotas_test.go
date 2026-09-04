@@ -44,49 +44,49 @@ func TestQuotaCollector(t *testing.T) {
 			},
 			ExpectedMetrics: `# HELP openstack_neutron_quota_floatingip quota_floatingip
 # TYPE openstack_neutron_quota_floatingip gauge
-openstack_neutron_quota_floatingip{tenant="proj-1",type="limit"} 50
-openstack_neutron_quota_floatingip{tenant="proj-1",type="reserved"} 0
-openstack_neutron_quota_floatingip{tenant="proj-1",type="used"} 2
+openstack_neutron_quota_floatingip{tenant="proj-1",tenant_id="proj-1",type="limit"} 50
+openstack_neutron_quota_floatingip{tenant="proj-1",tenant_id="proj-1",type="reserved"} 0
+openstack_neutron_quota_floatingip{tenant="proj-1",tenant_id="proj-1",type="used"} 2
 # HELP openstack_neutron_quota_network quota_network
 # TYPE openstack_neutron_quota_network gauge
-openstack_neutron_quota_network{tenant="proj-1",type="limit"} 100
-openstack_neutron_quota_network{tenant="proj-1",type="reserved"} 0
-openstack_neutron_quota_network{tenant="proj-1",type="used"} 1
+openstack_neutron_quota_network{tenant="proj-1",tenant_id="proj-1",type="limit"} 100
+openstack_neutron_quota_network{tenant="proj-1",tenant_id="proj-1",type="reserved"} 0
+openstack_neutron_quota_network{tenant="proj-1",tenant_id="proj-1",type="used"} 1
 # HELP openstack_neutron_quota_port quota_port
 # TYPE openstack_neutron_quota_port gauge
-openstack_neutron_quota_port{tenant="proj-1",type="limit"} 500
-openstack_neutron_quota_port{tenant="proj-1",type="reserved"} 0
-openstack_neutron_quota_port{tenant="proj-1",type="used"} 5
+openstack_neutron_quota_port{tenant="proj-1",tenant_id="proj-1",type="limit"} 500
+openstack_neutron_quota_port{tenant="proj-1",tenant_id="proj-1",type="reserved"} 0
+openstack_neutron_quota_port{tenant="proj-1",tenant_id="proj-1",type="used"} 5
 # HELP openstack_neutron_quota_rbac_policy quota_rbac_policy
 # TYPE openstack_neutron_quota_rbac_policy gauge
-openstack_neutron_quota_rbac_policy{tenant="proj-1",type="limit"} 10
-openstack_neutron_quota_rbac_policy{tenant="proj-1",type="reserved"} 0
-openstack_neutron_quota_rbac_policy{tenant="proj-1",type="used"} 0
+openstack_neutron_quota_rbac_policy{tenant="proj-1",tenant_id="proj-1",type="limit"} 10
+openstack_neutron_quota_rbac_policy{tenant="proj-1",tenant_id="proj-1",type="reserved"} 0
+openstack_neutron_quota_rbac_policy{tenant="proj-1",tenant_id="proj-1",type="used"} 0
 # HELP openstack_neutron_quota_router quota_router
 # TYPE openstack_neutron_quota_router gauge
-openstack_neutron_quota_router{tenant="proj-1",type="limit"} 10
-openstack_neutron_quota_router{tenant="proj-1",type="reserved"} 0
-openstack_neutron_quota_router{tenant="proj-1",type="used"} 1
+openstack_neutron_quota_router{tenant="proj-1",tenant_id="proj-1",type="limit"} 10
+openstack_neutron_quota_router{tenant="proj-1",tenant_id="proj-1",type="reserved"} 0
+openstack_neutron_quota_router{tenant="proj-1",tenant_id="proj-1",type="used"} 1
 # HELP openstack_neutron_quota_security_group quota_security_group
 # TYPE openstack_neutron_quota_security_group gauge
-openstack_neutron_quota_security_group{tenant="proj-1",type="limit"} -1
-openstack_neutron_quota_security_group{tenant="proj-1",type="reserved"} 0
-openstack_neutron_quota_security_group{tenant="proj-1",type="used"} 4
+openstack_neutron_quota_security_group{tenant="proj-1",tenant_id="proj-1",type="limit"} -1
+openstack_neutron_quota_security_group{tenant="proj-1",tenant_id="proj-1",type="reserved"} 0
+openstack_neutron_quota_security_group{tenant="proj-1",tenant_id="proj-1",type="used"} 4
 # HELP openstack_neutron_quota_security_group_rule quota_security_group_rule
 # TYPE openstack_neutron_quota_security_group_rule gauge
-openstack_neutron_quota_security_group_rule{tenant="proj-1",type="limit"} -1
-openstack_neutron_quota_security_group_rule{tenant="proj-1",type="reserved"} 0
-openstack_neutron_quota_security_group_rule{tenant="proj-1",type="used"} 26
+openstack_neutron_quota_security_group_rule{tenant="proj-1",tenant_id="proj-1",type="limit"} -1
+openstack_neutron_quota_security_group_rule{tenant="proj-1",tenant_id="proj-1",type="reserved"} 0
+openstack_neutron_quota_security_group_rule{tenant="proj-1",tenant_id="proj-1",type="used"} 26
 # HELP openstack_neutron_quota_subnet quota_subnet
 # TYPE openstack_neutron_quota_subnet gauge
-openstack_neutron_quota_subnet{tenant="proj-1",type="limit"} 100
-openstack_neutron_quota_subnet{tenant="proj-1",type="reserved"} 0
-openstack_neutron_quota_subnet{tenant="proj-1",type="used"} 3
+openstack_neutron_quota_subnet{tenant="proj-1",tenant_id="proj-1",type="limit"} 100
+openstack_neutron_quota_subnet{tenant="proj-1",tenant_id="proj-1",type="reserved"} 0
+openstack_neutron_quota_subnet{tenant="proj-1",tenant_id="proj-1",type="used"} 3
 # HELP openstack_neutron_quota_subnetpool quota_subnetpool
 # TYPE openstack_neutron_quota_subnetpool gauge
-openstack_neutron_quota_subnetpool{tenant="proj-1",type="limit"} -1
-openstack_neutron_quota_subnetpool{tenant="proj-1",type="reserved"} 0
-openstack_neutron_quota_subnetpool{tenant="proj-1",type="used"} 0
+openstack_neutron_quota_subnetpool{tenant="proj-1",tenant_id="proj-1",type="limit"} -1
+openstack_neutron_quota_subnetpool{tenant="proj-1",tenant_id="proj-1",type="reserved"} 0
+openstack_neutron_quota_subnetpool{tenant="proj-1",tenant_id="proj-1",type="used"} 0
 `,
 		},
 		{

@@ -63,6 +63,17 @@ FROM
 WHERE
     deleted = 0;
 
+-- name: GetDefaultQuotaLimits :many
+SELECT
+    resource,
+    hard_limit
+FROM
+    quota_classes
+WHERE
+    deleted = 0
+    AND class_name = 'default'
+    AND (resource IN ('gigabytes', 'backup_gigabytes') OR resource LIKE 'gigabytes\_%');
+
 -- name: GetSnapshotCount :one
 SELECT
     COUNT(*) as count
@@ -84,9 +95,8 @@ SELECT
     vt.name as volume_type,
     va.instance_uuid as server_id
 FROM
-    volumes v USE INDEX (volumes_service_uuid_idx)
+    volumes v
     LEFT JOIN volume_types vt ON v.volume_type_id = vt.id
     LEFT JOIN volume_attachment va ON v.id = va.volume_id AND va.deleted = 0
 WHERE
-    (v.service_uuid IS NULL OR v.service_uuid IS NOT NULL)
-    AND v.deleted = 0;
+    v.deleted = 0;

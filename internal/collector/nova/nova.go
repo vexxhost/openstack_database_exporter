@@ -6,6 +6,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/project"
 	"github.com/vexxhost/openstack_database_exporter/internal/db"
+	keystonedb "github.com/vexxhost/openstack_database_exporter/internal/db/keystone"
 	placementdb "github.com/vexxhost/openstack_database_exporter/internal/db/placement"
 	"github.com/vexxhost/openstack_database_exporter/internal/util"
 )
@@ -15,7 +16,7 @@ const (
 	Subsystem = "nova"
 )
 
-func RegisterCollectors(registry *prometheus.Registry, novaDatabaseURL, novaApiDatabaseURL, placementDatabaseURL string, projectResolver *project.Resolver, logger *slog.Logger) {
+func RegisterCollectors(registry *prometheus.Registry, novaDatabaseURL, novaApiDatabaseURL, placementDatabaseURL string, projectResolver *project.Resolver, logger *slog.Logger, defaultQuotas DefaultQuotas, keystoneQueries *keystonedb.Queries, keystoneRegion string) {
 	if novaDatabaseURL == "" || novaApiDatabaseURL == "" {
 		logger.Info("Collector not loaded", "service", "nova", "reason", "database URLs not configured")
 		return
@@ -47,7 +48,7 @@ func RegisterCollectors(registry *prometheus.Registry, novaDatabaseURL, novaApiD
 		logger.Warn("Placement database URL not configured, Nova limits_*_used metrics will be 0")
 	}
 
-	registry.MustRegister(NewComputeCollector(novaConn, novaApiConn, placementQueries, projectResolver, logger))
+	registry.MustRegister(NewComputeCollector(novaConn, novaApiConn, placementQueries, projectResolver, logger, defaultQuotas, keystoneQueries, keystoneRegion))
 
 	logger.Info("Registered collectors", "service", "nova")
 }

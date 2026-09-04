@@ -61,7 +61,7 @@ func TestQuotasCollector(t *testing.T) {
 	}
 
 	testutil.RunCollectorTests(t, tests, func(db *sql.DB, logger *slog.Logger) prometheus.Collector {
-		collector := NewQuotasCollector(logger, novadb.New(db), novaapidb.New(db), nil, project.NewResolver(logger, nil, 0))
+		collector := NewQuotasCollector(logger, novadb.New(db), novaapidb.New(db), nil, project.NewResolver(logger, nil, 0), DefaultDefaultQuotas(), nil, "")
 		return &quotasCollectorWrapper{collector}
 	})
 }

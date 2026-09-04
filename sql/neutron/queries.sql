@@ -58,6 +58,7 @@ SELECT
     n.name,
     n.project_id,
     n.status,
+    n.mtu,
     ns.network_type as provider_network_type,
     ns.physical_network as provider_physical_network,
     COALESCE(CAST(ns.segmentation_id AS CHAR), '') as provider_segmentation_id,
@@ -84,6 +85,7 @@ GROUP BY
     n.name,
     n.project_id,
     n.status,
+    n.mtu,
     ns.network_type,
     ns.physical_network,
     ns.segmentation_id,
@@ -122,6 +124,7 @@ SELECT
     p.id,
     p.mac_address,
     p.device_owner,
+    p.device_id,
     p.status,
     p.network_id,
     p.admin_state_up,
@@ -136,6 +139,7 @@ GROUP BY
     p.id,
     p.mac_address,
     p.device_owner,
+    p.device_id,
     p.status,
     p.network_id,
     p.admin_state_up,
@@ -274,3 +278,42 @@ SELECT
     'subnetpool' as resource,
     CAST(COUNT(*) AS SIGNED) as cnt
 FROM subnetpools WHERE project_id IS NOT NULL GROUP BY project_id;
+
+-- name: GetVpnServices :many
+SELECT
+    id,
+    COALESCE(project_id, '') as project_id,
+    COALESCE(subnet_id, '') as subnet_id,
+    router_id,
+    admin_state_up,
+    COALESCE(name, '') as name,
+    COALESCE(external_v4_ip, '') as external_v4_ip,
+    COALESCE(external_v6_ip, '') as external_v6_ip,
+    COALESCE(flavor_id, '') as flavor_id,
+    status
+FROM vpnservices;
+
+-- name: GetVpnSiteConnections :many
+SELECT
+    id,
+    COALESCE(project_id, '') as project_id,
+    admin_state_up,
+    COALESCE(name, '') as name,
+    vpnservice_id,
+    ikepolicy_id,
+    ipsecpolicy_id,
+    peer_id,
+    COALESCE(peer_ep_group_id, '') as peer_ep_group_id,
+    COALESCE(local_id, '') as local_id,
+    COALESCE(local_ep_group_id, '') as local_ep_group_id,
+    status
+FROM ipsec_site_connections;
+
+-- name: GetVpnEndpointGroupCount :one
+SELECT CAST(COUNT(*) AS SIGNED) as cnt FROM vpn_endpoint_groups;
+
+-- name: GetVpnIkePolicyCount :one
+SELECT CAST(COUNT(*) AS SIGNED) as cnt FROM ikepolicies;
+
+-- name: GetVpnIpsecPolicyCount :one
+SELECT CAST(COUNT(*) AS SIGNED) as cnt FROM ipsecpolicies;

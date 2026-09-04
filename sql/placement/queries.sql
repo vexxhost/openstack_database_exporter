@@ -10,12 +10,13 @@ SELECT
     i.total,
     i.allocation_ratio,
     i.reserved,
+    rp.generation as generation,
     CAST(COALESCE(SUM(a.used), 0) AS SIGNED) as used
 FROM resource_providers rp
 JOIN inventories i ON rp.id = i.resource_provider_id
 JOIN resource_classes rc ON i.resource_class_id = rc.id
 LEFT JOIN allocations a ON rp.id = a.resource_provider_id AND rc.id = a.resource_class_id
-GROUP BY rp.id, rp.name, rc.id, rc.name, i.total, i.allocation_ratio, i.reserved
+GROUP BY rp.id, rp.name, rp.generation, rc.id, rc.name, i.total, i.allocation_ratio, i.reserved
 ORDER BY rp.name, rc.name;
 
 -- name: GetAllocationsByProject :many
@@ -62,3 +63,14 @@ FROM consumers c
 JOIN projects p ON c.project_id = p.id
 JOIN users u ON c.user_id = u.id
 ORDER BY c.created_at DESC;
+
+-- name: GetProviderAllocations :many
+SELECT
+    rp.name as hostname,
+    a.consumer_id as uuid,
+    rc.name as resource_type,
+    a.used
+FROM allocations a
+JOIN resource_providers rp ON a.resource_provider_id = rp.id
+JOIN resource_classes rc ON a.resource_class_id = rc.id
+ORDER BY rp.name, rc.name;

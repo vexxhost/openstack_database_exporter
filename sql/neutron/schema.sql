@@ -242,3 +242,83 @@ CREATE TABLE
         `tag` varchar(255) NOT NULL,
         PRIMARY KEY (`standard_attr_id`, `tag`)
     );
+
+CREATE TABLE
+    `vpnservices` (
+        `project_id` varchar(255) DEFAULT NULL,
+        `id` varchar(36) NOT NULL PRIMARY KEY,
+        `name` varchar(255) DEFAULT NULL,
+        `description` varchar(255) DEFAULT NULL,
+        `status` varchar(16) NOT NULL,
+        `admin_state_up` tinyint(1) NOT NULL,
+        `external_v4_ip` varchar(16) DEFAULT NULL,
+        `external_v6_ip` varchar(64) DEFAULT NULL,
+        `subnet_id` varchar(36) DEFAULT NULL,
+        `router_id` varchar(36) NOT NULL,
+        `flavor_id` varchar(36) DEFAULT NULL
+    );
+
+CREATE TABLE
+    `ikepolicies` (
+        `project_id` varchar(255) DEFAULT NULL,
+        `id` varchar(36) NOT NULL PRIMARY KEY,
+        `name` varchar(255) DEFAULT NULL,
+        `description` varchar(255) DEFAULT NULL,
+        `auth_algorithm` varchar(255) NOT NULL,
+        `encryption_algorithm` varchar(255) NOT NULL,
+        `phase1_negotiation_mode` varchar(255) NOT NULL,
+        `lifetime_units` varchar(255) NOT NULL,
+        `lifetime_value` int NOT NULL,
+        `ike_version` varchar(255) NOT NULL,
+        `pfs` varchar(255) NOT NULL
+    );
+
+CREATE TABLE
+    `ipsecpolicies` (
+        `project_id` varchar(255) DEFAULT NULL,
+        `id` varchar(36) NOT NULL PRIMARY KEY,
+        `name` varchar(255) DEFAULT NULL,
+        `description` varchar(255) DEFAULT NULL,
+        `transform_protocol` varchar(255) NOT NULL,
+        `auth_algorithm` varchar(255) NOT NULL,
+        `encryption_algorithm` varchar(255) NOT NULL,
+        `encapsulation_mode` varchar(255) NOT NULL,
+        `lifetime_units` varchar(255) NOT NULL,
+        `lifetime_value` int NOT NULL,
+        `pfs` varchar(255) NOT NULL
+    );
+
+CREATE TABLE
+    `ipsec_site_connections` (
+        `project_id` varchar(255) DEFAULT NULL,
+        `id` varchar(36) NOT NULL PRIMARY KEY,
+        `name` varchar(255) DEFAULT NULL,
+        `description` varchar(255) DEFAULT NULL,
+        `peer_address` varchar(255) NOT NULL,
+        `peer_id` varchar(255) NOT NULL,
+        `local_id` varchar(255) DEFAULT NULL,
+        `route_mode` varchar(8) NOT NULL,
+        `mtu` int NOT NULL,
+        `initiator` varchar(255) NOT NULL,
+        `auth_mode` varchar(16) NOT NULL,
+        `psk` varchar(255) NOT NULL,
+        `dpd_action` varchar(255) NOT NULL,
+        `dpd_interval` int NOT NULL,
+        `dpd_timeout` int NOT NULL,
+        `status` varchar(16) NOT NULL,
+        `admin_state_up` tinyint(1) NOT NULL,
+        `vpnservice_id` varchar(36) NOT NULL,
+        `ipsecpolicy_id` varchar(36) NOT NULL,
+        `ikepolicy_id` varchar(36) NOT NULL,
+        `local_ep_group_id` varchar(36) DEFAULT NULL,
+        `peer_ep_group_id` varchar(36) DEFAULT NULL
+    );
+
+CREATE TABLE
+    `vpn_endpoint_groups` (
+        `project_id` varchar(255) DEFAULT NULL,
+        `id` varchar(36) NOT NULL PRIMARY KEY,
+        `name` varchar(255) DEFAULT NULL,
+        `description` varchar(255) DEFAULT NULL,
+        `endpoint_type` varchar(255) NOT NULL
+    );

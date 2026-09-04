@@ -97,3 +97,19 @@ sql:
         package: "ironic"
         out: "internal/db/ironic"
         emit_exported_queries: true
+  - engine: "mysql"
+    schema: "sql/masakari/schema.sql"
+    queries: "sql/masakari/queries.sql"
+    gen:
+      go:
+        package: "masakari"
+        out: "internal/db/masakari"
+        emit_exported_queries: true
+  - engine: "mysql"
+    schema: "sql/designate/schema.sql"
+    queries: "sql/designate/queries.sql"
+    gen:
+      go:
+        package: "designate"
+        out: "internal/db/designate"
+        emit_exported_queries: true

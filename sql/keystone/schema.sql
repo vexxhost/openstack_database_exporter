@@ -57,3 +57,42 @@ CREATE TABLE
         PRIMARY KEY (`id`),
         UNIQUE KEY `ixu_group_name_domain_id` (`domain_id`,`name`)
     );
+
+CREATE TABLE
+    `service` (
+        `id` varchar(64) NOT NULL,
+        `type` varchar(255) DEFAULT NULL,
+        `enabled` tinyint(1) DEFAULT NULL,
+        `extra` text,
+        PRIMARY KEY (`id`)
+    );
+
+CREATE TABLE
+    `registered_limit` (
+        `internal_id` int NOT NULL AUTO_INCREMENT,
+        `id` varchar(64) NOT NULL,
+        `service_id` varchar(255) DEFAULT NULL,
+        `region_id` varchar(64) DEFAULT NULL,
+        `resource_name` varchar(255) DEFAULT NULL,
+        `default_limit` int NOT NULL,
+        `description` text,
+        PRIMARY KEY (`internal_id`),
+        UNIQUE KEY `ixu_registered_limit_id` (`id`),
+        KEY `registered_limit_service_id_fkey` (`service_id`),
+        KEY `registered_limit_region_id_fkey` (`region_id`)
+    );
+
+CREATE TABLE
+    `limit` (
+        `internal_id` int NOT NULL AUTO_INCREMENT,
+        `id` varchar(64) NOT NULL,
+        `project_id` varchar(64) DEFAULT NULL,
+        `domain_id` varchar(64) DEFAULT NULL,
+        `resource_limit` int NOT NULL,
+        `description` text,
+        `registered_limit_id` varchar(64) DEFAULT NULL,
+        PRIMARY KEY (`internal_id`),
+        UNIQUE KEY `ixu_limit_id` (`id`),
+        KEY `limit_project_id_fkey` (`project_id`),
+        KEY `limit_registered_limit_id_fkey` (`registered_limit_id`)
+    );

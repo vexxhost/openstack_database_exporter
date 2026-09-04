@@ -26,6 +26,13 @@ var (
 		[]string{"adminState", "disabledReason", "hostname", "id", "service", "zone"},
 		nil,
 	)
+
+	availabilityZonesDesc = prometheus.NewDesc(
+		prometheus.BuildFQName(Namespace, Subsystem, "availability_zones"),
+		"availability_zones",
+		nil,
+		nil,
+	)
 )
 
 type ServicesCollector struct {
@@ -48,6 +55,7 @@ func NewServicesCollector(logger *slog.Logger, novaDB *novadb.Queries, novaAPIDB
 
 func (c *ServicesCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- agentStateDesc
+	ch <- availabilityZonesDesc
 }
 
 func (c *ServicesCollector) Collect(ch chan<- prometheus.Metric) error {
@@ -57,6 +65,28 @@ func (c *ServicesCollector) Collect(ch chan<- prometheus.Metric) error {
 	if err != nil {
 		return fmt.Errorf("failed to get services: %w", err)
 	}
+
+	// Build host → availability zone map from aggregate metadata
+	hostAZMap := make(map[string]string)
+	azRows, err := c.novaAPIDB.GetHostAvailabilityZones(ctx)
+	if err != nil {
+		c.logger.Error("failed to get host availability zones", "error", err)
+	} else {
+		for _, row := range azRows {
+			if row.Host.Valid && row.AvailabilityZone.Valid {
+				hostAZMap[row.Host.String] = row.AvailabilityZone.String
+			}
+		}
+	}
+
+	// Count distinct availability zones from aggregate metadata
+	azSet := make(map[string]struct{})
+	for _, az := range hostAZMap {
+		if az != "" {
+			azSet[az] = struct{}{}
+		}
+	}
+	ch <- prometheus.MustNewConstMetric(availabilityZonesDesc, prometheus.GaugeValue, float64(len(azSet)))
 
 	// Emit per-service agent state metrics matching original exporter
 	for _, service := range services {
@@ -73,11 +103,16 @@ func (c *ServicesCollector) Collect(ch chan<- prometheus.Metric) error {
 			}
 		}
 
-		// Determine zone based on service binary (matching original logic)
-		// Only nova-compute gets zone="nova", all others get zone="internal"
+		// Determine zone: use AZ from aggregate metadata if available,
+		// otherwise default to "internal" for non-compute services
 		zone := "internal"
 		if service.Binary.Valid && service.Binary.String == "nova-compute" {
 			zone = "nova"
+		}
+		if service.Host.Valid {
+			if az, ok := hostAZMap[service.Host.String]; ok {
+				zone = az
+			}
 		}
 
 		ch <- prometheus.MustNewConstMetric(

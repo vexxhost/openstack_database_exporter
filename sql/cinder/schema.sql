@@ -140,6 +140,18 @@ CREATE TABLE
     );
 
 CREATE TABLE
+    `quota_classes` (
+        `created_at` datetime DEFAULT NULL,
+        `updated_at` datetime DEFAULT NULL,
+        `deleted_at` datetime DEFAULT NULL,
+        `deleted` tinyint (1) DEFAULT NULL,
+        `id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        `class_name` varchar(255) NOT NULL,
+        `resource` varchar(300) NOT NULL,
+        `hard_limit` int DEFAULT NULL
+    );
+
+CREATE TABLE
     `volume_types` (
         `created_at` datetime DEFAULT NULL,
         `updated_at` datetime DEFAULT NULL,

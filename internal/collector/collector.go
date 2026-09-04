@@ -7,12 +7,14 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/cinder"
+	"github.com/vexxhost/openstack_database_exporter/internal/collector/designate"
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/glance"
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/heat"
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/ironic"
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/keystone"
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/magnum"
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/manila"
+	"github.com/vexxhost/openstack_database_exporter/internal/collector/masakari"
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/neutron"
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/nova"
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/octavia"
@@ -28,9 +30,11 @@ const (
 
 type Config struct {
 	CinderDatabaseURL    string
+	DesignateDatabaseURL string
 	GlanceDatabaseURL    string
 	HeatDatabaseURL      string
 	IronicDatabaseURL    string
+	MasakariDatabaseURL  string
 	KeystoneDatabaseURL  string
 	MagnumDatabaseURL    string
 	ManilaDatabaseURL    string
@@ -40,6 +44,8 @@ type Config struct {
 	NovaDatabaseURL      string
 	NovaAPIDatabaseURL   string
 	ProjectCacheTTL      time.Duration
+	NovaDefaultQuotas    nova.DefaultQuotas
+	KeystoneRegion       string
 }
 
 func NewRegistry(cfg Config, logger *slog.Logger) *prometheus.Registry {
@@ -60,14 +66,16 @@ func NewRegistry(cfg Config, logger *slog.Logger) *prometheus.Registry {
 	projectResolver := project.NewResolver(logger, keystoneQueries, cfg.ProjectCacheTTL)
 
 	cinder.RegisterCollectors(reg, cfg.CinderDatabaseURL, projectResolver, logger)
+	designate.RegisterCollectors(reg, cfg.DesignateDatabaseURL, logger)
 	glance.RegisterCollectors(reg, cfg.GlanceDatabaseURL, logger)
 	heat.RegisterCollectors(reg, cfg.HeatDatabaseURL, logger)
 	ironic.RegisterCollectors(reg, cfg.IronicDatabaseURL, logger)
+	masakari.RegisterCollectors(reg, cfg.MasakariDatabaseURL, logger)
 	keystone.RegisterCollectors(reg, cfg.KeystoneDatabaseURL, logger)
 	magnum.RegisterCollectors(reg, cfg.MagnumDatabaseURL, logger)
 	manila.RegisterCollectors(reg, cfg.ManilaDatabaseURL, logger)
 	neutron.RegisterCollectors(reg, cfg.NeutronDatabaseURL, projectResolver, logger)
-	nova.RegisterCollectors(reg, cfg.NovaDatabaseURL, cfg.NovaAPIDatabaseURL, cfg.PlacementDatabaseURL, projectResolver, logger)
+	nova.RegisterCollectors(reg, cfg.NovaDatabaseURL, cfg.NovaAPIDatabaseURL, cfg.PlacementDatabaseURL, projectResolver, logger, cfg.NovaDefaultQuotas, keystoneQueries, cfg.KeystoneRegion)
 	octavia.RegisterCollectors(reg, cfg.OctaviaDatabaseURL, logger)
 	placement.RegisterCollectors(reg, cfg.PlacementDatabaseURL, logger)
 

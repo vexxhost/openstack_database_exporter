@@ -3,6 +3,7 @@ package keystone
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -87,9 +88,7 @@ func (c *ProjectsCollector) Collect(ch chan<- prometheus.Metric) error {
 
 		tags := ""
 		if project.Tags != nil {
-			if tagsStr, ok := project.Tags.(string); ok {
-				tags = tagsStr
-			}
+			tags = fmt.Sprintf("%s", project.Tags)
 		}
 
 		ch <- prometheus.MustNewConstMetric(

@@ -13,6 +13,7 @@ import (
 	webflag "github.com/prometheus/exporter-toolkit/web/kingpinflag"
 
 	"github.com/vexxhost/openstack_database_exporter/internal/collector"
+	"github.com/vexxhost/openstack_database_exporter/internal/collector/nova"
 )
 
 var (
@@ -27,6 +28,10 @@ var (
 		"cinder.database-url",
 		"Cinder database connection URL (oslo.db format)",
 	).Envar("CINDER_DATABASE_URL").String()
+	designateDatabaseURL = kingpin.Flag(
+		"designate.database-url",
+		"Designate database connection URL (oslo.db format)",
+	).Envar("DESIGNATE_DATABASE_URL").String()
 	glanceDatabaseURL = kingpin.Flag(
 		"glance.database-url",
 		"Glance database connection URL (oslo.db format)",
@@ -39,6 +44,10 @@ var (
 		"ironic.database-url",
 		"Ironic database connection URL (oslo.db format)",
 	).Envar("IRONIC_DATABASE_URL").String()
+	masakariDatabaseURL = kingpin.Flag(
+		"masakari.database-url",
+		"Masakari database connection URL (oslo.db format)",
+	).Envar("MASAKARI_DATABASE_URL").String()
 	keystoneDatabaseURL = kingpin.Flag(
 		"keystone.database-url",
 		"Keystone database connection URL (oslo.db format)",
@@ -75,6 +84,27 @@ var (
 		"project-cache-ttl",
 		"TTL for the keystone project name cache (default 5m).",
 	).Default("5m").Envar("PROJECT_CACHE_TTL").Duration()
+	// Nova default quota overrides (used when no DB quota_classes entry exists)
+	novaDefaultInstances = kingpin.Flag(
+		"nova.default-quota-instances",
+		"Default Nova instances quota when no quota_classes entry exists in the DB.",
+	).Default("10").Envar("NOVA_DEFAULT_QUOTA_INSTANCES").Int()
+	novaDefaultCores = kingpin.Flag(
+		"nova.default-quota-cores",
+		"Default Nova cores (vCPUs) quota when no quota_classes entry exists in the DB.",
+	).Default("20").Envar("NOVA_DEFAULT_QUOTA_CORES").Int()
+	novaDefaultPinnedCores = kingpin.Flag(
+		"nova.default-quota-pinned-cores",
+		"Default Nova pinned cores (pCPUs) quota when no quota_classes entry exists in the DB.",
+	).Default("0").Envar("NOVA_DEFAULT_QUOTA_PINNED_CORES").Int()
+	novaDefaultRAM = kingpin.Flag(
+		"nova.default-quota-ram",
+		"Default Nova RAM quota (in MB) when no quota_classes entry exists in the DB.",
+	).Default("51200").Envar("NOVA_DEFAULT_QUOTA_RAM").Int()
+	keystoneRegion = kingpin.Flag(
+		"keystone.region",
+		"Keystone region ID for filtering unified limits. Empty string matches global (region_id IS NULL) limits.",
+	).Default("").Envar("KEYSTONE_REGION").String()
 )
 
 func main() {
@@ -92,9 +122,11 @@ func main() {
 
 	reg := collector.NewRegistry(collector.Config{
 		CinderDatabaseURL:    *cinderDatabaseURL,
+		DesignateDatabaseURL: *designateDatabaseURL,
 		GlanceDatabaseURL:    *glanceDatabaseURL,
 		HeatDatabaseURL:      *heatDatabaseURL,
 		IronicDatabaseURL:    *ironicDatabaseURL,
+		MasakariDatabaseURL:  *masakariDatabaseURL,
 		KeystoneDatabaseURL:  *keystoneDatabaseURL,
 		MagnumDatabaseURL:    *magnumDatabaseURL,
 		ManilaDatabaseURL:    *manilaDatabaseURL,
@@ -104,6 +136,13 @@ func main() {
 		NovaDatabaseURL:      *novaDatabaseURL,
 		NovaAPIDatabaseURL:   *novaAPIDatabaseURL,
 		ProjectCacheTTL:      *projectCacheTTL,
+		NovaDefaultQuotas: nova.DefaultQuotas{
+			Instances:   *novaDefaultInstances,
+			Cores:       *novaDefaultCores,
+			PinnedCores: *novaDefaultPinnedCores,
+			RAM:         *novaDefaultRAM,
+		},
+		KeystoneRegion: *keystoneRegion,
 	}, logger)
 
 	http.Handle(*metricsPath, promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))

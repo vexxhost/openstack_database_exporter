@@ -18,9 +18,9 @@ func TestIdentityCollector(t *testing.T) {
 			SetupMock: func(mock sqlmock.Sqlmock) {
 				// Setup domain metrics query
 				domainRows := sqlmock.NewRows([]string{
-					"id", "name", "description", "enabled",
+					"id", "name", "description", "enabled", "tags",
 				}).AddRow(
-					"default", "Default", "Default domain", 1,
+					"default", "Default", "Default domain", 1, "",
 				)
 				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetDomainMetrics)).WillReturnRows(domainRows)
 
@@ -35,6 +35,7 @@ func TestIdentityCollector(t *testing.T) {
 					"0cbd49cbf76d405d9c86562e1d579bd3", "demo", "Demo Project", 1, "default", "", 0, "",
 				)
 				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetProjectMetrics)).WillReturnRows(projectRows)
+
 
 				// Setup group metrics query
 				groupRows := sqlmock.NewRows([]string{
@@ -66,7 +67,7 @@ func TestIdentityCollector(t *testing.T) {
 			},
 			ExpectedMetrics: `# HELP openstack_identity_domain_info domain_info
 # TYPE openstack_identity_domain_info gauge
-openstack_identity_domain_info{description="Default domain",enabled="true",id="default",name="Default"} 1
+openstack_identity_domain_info{description="Default domain",enabled="true",id="default",name="Default",tags=""} 1
 # HELP openstack_identity_domains domains
 # TYPE openstack_identity_domains gauge
 openstack_identity_domains 1
@@ -105,6 +106,7 @@ openstack_identity_users 2
 					"admin", "admin", "", 1, "default", "", 0, "",
 				)
 				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetProjectMetrics)).WillReturnRows(projectRows)
+
 
 				groupRows := sqlmock.NewRows([]string{
 					"id", "domain_id", "name", "description",

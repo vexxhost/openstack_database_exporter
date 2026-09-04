@@ -62,6 +62,20 @@ CREATE TABLE IF NOT EXISTS
     );
 
 CREATE TABLE IF NOT EXISTS
+    `aggregate_metadata` (
+        `created_at` DATETIME NULL,
+        `updated_at` DATETIME NULL,
+        `id` INT NOT NULL AUTO_INCREMENT,
+        `aggregate_id` INT NOT NULL,
+        `key` VARCHAR(255) NOT NULL,
+        `value` VARCHAR(255) NULL,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY uniq_aggregate_metadata0aggregate_id0key (`aggregate_id`, `key`),
+        KEY aggregate_id (`aggregate_id`),
+        CONSTRAINT aggregate_metadata_ibfk_1 FOREIGN KEY (`aggregate_id`) REFERENCES `aggregates` (`id`)
+    );
+
+CREATE TABLE IF NOT EXISTS
     `quota_classes` (
         `created_at` DATETIME NULL,
         `updated_at` DATETIME NULL,

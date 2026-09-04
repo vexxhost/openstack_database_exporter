@@ -2,10 +2,12 @@ package nova
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/project"
+	keystonedb "github.com/vexxhost/openstack_database_exporter/internal/db/keystone"
 	"github.com/vexxhost/openstack_database_exporter/internal/db/nova"
 	"github.com/vexxhost/openstack_database_exporter/internal/db/nova_api"
 	"github.com/vexxhost/openstack_database_exporter/internal/db/placement"
@@ -18,13 +20,16 @@ type LimitsCollector struct {
 	logger          *slog.Logger
 	novaDB          *nova.Queries
 	novaAPIDB       *nova_api.Queries
+	keystoneDB      *keystonedb.Queries
+	keystoneRegion  string
 	placementDB     *placement.Queries
 	projectResolver *project.Resolver
 	limitsMetrics   map[string]*prometheus.Desc
+	defaultQuotas   DefaultQuotas
 }
 
 // NewLimitsCollector creates a new limits collector
-func NewLimitsCollector(logger *slog.Logger, novaDB *nova.Queries, novaAPIDB *nova_api.Queries, placementDB *placement.Queries, projectResolver *project.Resolver) *LimitsCollector {
+func NewLimitsCollector(logger *slog.Logger, novaDB *nova.Queries, novaAPIDB *nova_api.Queries, placementDB *placement.Queries, projectResolver *project.Resolver, defaultQuotas DefaultQuotas, keystoneDB *keystonedb.Queries, keystoneRegion string) *LimitsCollector {
 	return &LimitsCollector{
 		logger: logger.With(
 			"namespace", Namespace,
@@ -33,43 +38,58 @@ func NewLimitsCollector(logger *slog.Logger, novaDB *nova.Queries, novaAPIDB *no
 		),
 		novaDB:          novaDB,
 		novaAPIDB:       novaAPIDB,
+		keystoneDB:      keystoneDB,
+		keystoneRegion:  keystoneRegion,
 		placementDB:     placementDB,
 		projectResolver: projectResolver,
+		defaultQuotas:   defaultQuotas,
 		limitsMetrics: map[string]*prometheus.Desc{
 			"limits_instances_max": prometheus.NewDesc(
 				prometheus.BuildFQName(Namespace, Subsystem, "limits_instances_max"),
 				"limits_instances_max",
-				[]string{"domain_id", "tenant", "tenant_id"},
+				[]string{"tenant", "tenant_id"},
 				nil,
 			),
 			"limits_instances_used": prometheus.NewDesc(
 				prometheus.BuildFQName(Namespace, Subsystem, "limits_instances_used"),
 				"limits_instances_used",
-				[]string{"domain_id", "tenant", "tenant_id"},
+				[]string{"tenant", "tenant_id"},
 				nil,
 			),
 			"limits_memory_max": prometheus.NewDesc(
 				prometheus.BuildFQName(Namespace, Subsystem, "limits_memory_max"),
 				"limits_memory_max",
-				[]string{"domain_id", "tenant", "tenant_id"},
+				[]string{"tenant", "tenant_id"},
 				nil,
 			),
 			"limits_memory_used": prometheus.NewDesc(
 				prometheus.BuildFQName(Namespace, Subsystem, "limits_memory_used"),
 				"limits_memory_used",
-				[]string{"domain_id", "tenant", "tenant_id"},
+				[]string{"tenant", "tenant_id"},
 				nil,
 			),
 			"limits_vcpus_max": prometheus.NewDesc(
 				prometheus.BuildFQName(Namespace, Subsystem, "limits_vcpus_max"),
 				"limits_vcpus_max",
-				[]string{"domain_id", "tenant", "tenant_id"},
+				[]string{"tenant", "tenant_id"},
 				nil,
 			),
 			"limits_vcpus_used": prometheus.NewDesc(
 				prometheus.BuildFQName(Namespace, Subsystem, "limits_vcpus_used"),
 				"limits_vcpus_used",
-				[]string{"domain_id", "tenant", "tenant_id"},
+				[]string{"tenant", "tenant_id"},
+				nil,
+			),
+			"limits_pcpus_used": prometheus.NewDesc(
+				prometheus.BuildFQName(Namespace, Subsystem, "limits_pcpus_used"),
+				"limits_pcpus_used",
+				[]string{"tenant", "tenant_id"},
+				nil,
+			),
+			"limits_pcpus_max": prometheus.NewDesc(
+				prometheus.BuildFQName(Namespace, Subsystem, "limits_pcpus_max"),
+				"limits_pcpus_max",
+				[]string{"tenant", "tenant_id"},
 				nil,
 			),
 		},
@@ -91,59 +111,90 @@ func (c *LimitsCollector) Collect(ch chan<- prometheus.Metric) error {
 func (c *LimitsCollector) collectLimitsMetrics(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
 
-	// Get quotas (limits) from Nova API DB
-	quotas, err := c.novaAPIDB.GetQuotas(ctx)
-	if err != nil {
-		return err
+	// Build limits maps by project and resource
+	limitsByProject := make(map[string]map[string]float64)
+	projectHasQuota := make(map[string]map[string]bool)
+
+	// Merge: DB defaults override configured defaults
+	effectiveDefaults := map[string]float64{
+		"instances": float64(c.defaultQuotas.Instances),
+		"cores":     float64(c.defaultQuotas.Cores),
+		"pcpus":     float64(c.defaultQuotas.PinnedCores),
+		"ram":       float64(c.defaultQuotas.RAM),
 	}
 
-	// Get default quota class overrides from DB (class_name = 'default')
-	dbDefaults := make(map[string]float64)
-	quotaClassDefaults, err := c.novaAPIDB.GetQuotaClassDefaults(ctx)
-	if err != nil {
-		c.logger.Error("Failed to get quota class defaults", "error", err)
+	if c.keystoneDB != nil {
+		// Unified Limits: read registered_limits (defaults) and project limits from Keystone
+		regLimits, err := c.keystoneDB.GetRegisteredLimits(ctx, keystonedb.GetRegisteredLimitsParams{RegionID: sql.NullString{String: c.keystoneRegion, Valid: true}})
+		if err != nil {
+			c.logger.Error("Failed to get registered limits from keystone", "error", err)
+		} else {
+			for _, rl := range regLimits {
+				if rl.ResourceName.Valid {
+					if name, ok := unifiedLimitToNova(rl.ResourceName.String); ok {
+						effectiveDefaults[name] = float64(rl.DefaultLimit)
+					}
+				}
+			}
+		}
+
+		projLimits, err := c.keystoneDB.GetProjectLimits(ctx, keystonedb.GetProjectLimitsParams{RegionID: sql.NullString{String: c.keystoneRegion, Valid: true}})
+		if err != nil {
+			c.logger.Error("Failed to get project limits from keystone", "error", err)
+		} else {
+			for _, pl := range projLimits {
+				if !pl.ProjectID.Valid || !pl.ResourceName.Valid {
+					continue
+				}
+				name, ok := unifiedLimitToNova(pl.ResourceName.String)
+				if !ok {
+					continue
+				}
+				projectID := pl.ProjectID.String
+				if limitsByProject[projectID] == nil {
+					limitsByProject[projectID] = make(map[string]float64)
+					projectHasQuota[projectID] = make(map[string]bool)
+				}
+				limitsByProject[projectID][name] = float64(pl.ResourceLimit)
+				projectHasQuota[projectID][name] = true
+			}
+		}
 	} else {
-		for _, qc := range quotaClassDefaults {
-			if qc.Resource.Valid {
-				dbDefaults[qc.Resource.String] = float64(qc.HardLimit.Int32)
+		// Legacy DB quota driver: read from nova_api.quotas and quota_classes
+		quotas, err := c.novaAPIDB.GetQuotas(ctx)
+		if err != nil {
+			return err
+		}
+		for _, quota := range quotas {
+			if !quota.ProjectID.Valid || !quota.HardLimit.Valid {
+				continue
+			}
+			projectID := quota.ProjectID.String
+			resource := quota.Resource
+			hardLimit := float64(quota.HardLimit.Int32)
+			if limitsByProject[projectID] == nil {
+				limitsByProject[projectID] = make(map[string]float64)
+				projectHasQuota[projectID] = make(map[string]bool)
+			}
+			limitsByProject[projectID][resource] = hardLimit
+			projectHasQuota[projectID][resource] = true
+		}
+
+		quotaClassDefaults, err := c.novaAPIDB.GetQuotaClassDefaults(ctx)
+		if err != nil {
+			c.logger.Error("Failed to get quota class defaults", "error", err)
+		} else {
+			for _, qc := range quotaClassDefaults {
+				if qc.Resource.Valid && qc.HardLimit.Valid {
+					effectiveDefaults[qc.Resource.String] = float64(qc.HardLimit.Int32)
+				}
 			}
 		}
 	}
 
-	// Hardcoded Nova defaults (fallback when no DB default exists)
-	hardcodedDefaults := map[string]float64{
-		"instances": 10,
-		"cores":     20,
-		"ram":       51200,
-	}
-
-	// Merge: DB defaults override hardcoded defaults
-	effectiveDefaults := make(map[string]float64)
-	for k, v := range hardcodedDefaults {
-		effectiveDefaults[k] = v
-	}
-	for k, v := range dbDefaults {
-		effectiveDefaults[k] = v
-	}
-
-	// Build limits maps by project and resource
-	limitsByProject := make(map[string]map[string]float64)
-	projectHasQuota := make(map[string]map[string]bool)
-	for _, quota := range quotas {
-		projectID := quota.ProjectID.String
-		resource := quota.Resource
-		hardLimit := float64(quota.HardLimit.Int32)
-
-		if limitsByProject[projectID] == nil {
-			limitsByProject[projectID] = make(map[string]float64)
-			projectHasQuota[projectID] = make(map[string]bool)
-		}
-		limitsByProject[projectID][resource] = hardLimit
-		projectHasQuota[projectID][resource] = true
-	}
-
 	// Get usage from placement (authoritative source for quota usage)
 	vcpusUsedByProject := make(map[string]float64)
+	pcpusUsedByProject := make(map[string]float64)
 	memoryUsedByProject := make(map[string]float64)
 	instanceCountByProject := make(map[string]float64)
 
@@ -158,6 +209,8 @@ func (c *LimitsCollector) collectLimitsMetrics(ch chan<- prometheus.Metric) erro
 				switch alloc.ResourceType.String {
 				case "VCPU":
 					vcpusUsedByProject[alloc.ProjectID] = used
+				case "PCPU":
+					pcpusUsedByProject[alloc.ProjectID] = used
 				case "MEMORY_MB":
 					memoryUsedByProject[alloc.ProjectID] = used
 				}
@@ -182,7 +235,6 @@ func (c *LimitsCollector) collectLimitsMetrics(ch chan<- prometheus.Metric) erro
 
 	for projectID, info := range allProjectInfos {
 		tenantName := info.Name
-		domainID := info.DomainID
 
 		// Instances
 		instancesMax := effectiveDefaults["instances"]
@@ -194,13 +246,13 @@ func (c *LimitsCollector) collectLimitsMetrics(ch chan<- prometheus.Metric) erro
 			c.limitsMetrics["limits_instances_max"],
 			prometheus.GaugeValue,
 			instancesMax,
-			domainID, tenantName, projectID,
+			tenantName, projectID,
 		)
 		ch <- prometheus.MustNewConstMetric(
 			c.limitsMetrics["limits_instances_used"],
 			prometheus.GaugeValue,
 			instanceCountByProject[projectID],
-			domainID, tenantName, projectID,
+			tenantName, projectID,
 		)
 
 		// Memory
@@ -213,13 +265,13 @@ func (c *LimitsCollector) collectLimitsMetrics(ch chan<- prometheus.Metric) erro
 			c.limitsMetrics["limits_memory_max"],
 			prometheus.GaugeValue,
 			memoryMax,
-			domainID, tenantName, projectID,
+			tenantName, projectID,
 		)
 		ch <- prometheus.MustNewConstMetric(
 			c.limitsMetrics["limits_memory_used"],
 			prometheus.GaugeValue,
 			memoryUsedByProject[projectID],
-			domainID, tenantName, projectID,
+			tenantName, projectID,
 		)
 
 		// VCPUs
@@ -232,13 +284,32 @@ func (c *LimitsCollector) collectLimitsMetrics(ch chan<- prometheus.Metric) erro
 			c.limitsMetrics["limits_vcpus_max"],
 			prometheus.GaugeValue,
 			vcpusMax,
-			domainID, tenantName, projectID,
+			tenantName, projectID,
 		)
 		ch <- prometheus.MustNewConstMetric(
 			c.limitsMetrics["limits_vcpus_used"],
 			prometheus.GaugeValue,
 			vcpusUsedByProject[projectID],
-			domainID, tenantName, projectID,
+			tenantName, projectID,
+		)
+
+		// pCPUs (pinned CPUs from placement, separate quota from vCPUs)
+		pcpusMax := effectiveDefaults["pcpus"]
+		if projectHasQuota[projectID] != nil && projectHasQuota[projectID]["pcpus"] {
+			pcpusMax = limitsByProject[projectID]["pcpus"]
+		}
+
+		ch <- prometheus.MustNewConstMetric(
+			c.limitsMetrics["limits_pcpus_max"],
+			prometheus.GaugeValue,
+			pcpusMax,
+			tenantName, projectID,
+		)
+		ch <- prometheus.MustNewConstMetric(
+			c.limitsMetrics["limits_pcpus_used"],
+			prometheus.GaugeValue,
+			pcpusUsedByProject[projectID],
+			tenantName, projectID,
 		)
 	}
 

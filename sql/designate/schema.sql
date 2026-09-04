@@ -1,0 +1,75 @@
+CREATE TABLE
+    `zones` (
+        `id` varchar(36) NOT NULL,
+        `version` int NOT NULL DEFAULT '1',
+        `created_at` datetime DEFAULT NULL,
+        `updated_at` datetime DEFAULT NULL,
+        `deleted` char(32) NOT NULL DEFAULT '0',
+        `deleted_at` datetime DEFAULT NULL,
+        `shard` smallint NOT NULL,
+        `tenant_id` varchar(36) DEFAULT NULL,
+        `name` varchar(255) NOT NULL,
+        `email` varchar(255) NOT NULL,
+        `description` varchar(160) DEFAULT NULL,
+        `type` enum('PRIMARY','SECONDARY','CATALOG') NOT NULL,
+        `transferred_at` datetime DEFAULT NULL,
+        `ttl` int NOT NULL,
+        `serial` int NOT NULL,
+        `refresh` int NOT NULL,
+        `retry` int NOT NULL,
+        `expire` int NOT NULL,
+        `minimum` int NOT NULL,
+        `status` enum('ACTIVE','PENDING','DELETED','ERROR') NOT NULL DEFAULT 'PENDING',
+        `parent_zone_id` varchar(36) DEFAULT NULL,
+        `action` enum('CREATE','DELETE','UPDATE','NONE') NOT NULL DEFAULT 'CREATE',
+        `pool_id` varchar(36) DEFAULT NULL,
+        `reverse_name` varchar(255) NOT NULL,
+        `delayed_notify` tinyint(1) NOT NULL DEFAULT '0',
+        `increment_serial` tinyint(1) NOT NULL DEFAULT '0',
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `unique_zone_name` (`name`, `deleted`, `pool_id`)
+    );
+
+CREATE TABLE
+    `recordsets` (
+        `id` varchar(36) NOT NULL,
+        `version` int NOT NULL DEFAULT '1',
+        `created_at` datetime DEFAULT NULL,
+        `updated_at` datetime DEFAULT NULL,
+        `zone_shard` smallint NOT NULL,
+        `tenant_id` varchar(36) DEFAULT NULL,
+        `zone_id` varchar(36) NOT NULL,
+        `name` varchar(255) NOT NULL,
+        `type` enum('A','AAAA','CNAME','MX','SRV','TXT','SPF','NS','PTR','SSHFP','SOA','NAPTR','CAA','CERT','HTTPS','SVCB','TLSA') NOT NULL,
+        `ttl` int DEFAULT NULL,
+        `description` varchar(160) DEFAULT NULL,
+        `reverse_name` varchar(255) NOT NULL DEFAULT '',
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `unique_recordset` (`zone_id`, `name`, `type`),
+        KEY `zone_id` (`zone_id`)
+    );
+
+CREATE TABLE
+    `records` (
+        `id` varchar(36) NOT NULL,
+        `version` int NOT NULL DEFAULT '1',
+        `created_at` datetime DEFAULT NULL,
+        `updated_at` datetime DEFAULT NULL,
+        `recordset_id` varchar(36) NOT NULL,
+        `data` varchar(5000) NOT NULL,
+        `description` varchar(160) DEFAULT NULL,
+        `hash` varchar(32) DEFAULT NULL,
+        `managed` tinyint(1) NOT NULL DEFAULT '0',
+        `managed_resource_type` varchar(50) DEFAULT NULL,
+        `managed_resource_region` varchar(100) DEFAULT NULL,
+        `managed_resource_id` varchar(36) DEFAULT NULL,
+        `managed_tenant_id` varchar(36) DEFAULT NULL,
+        `status` enum('ACTIVE','PENDING','DELETED','ERROR') NOT NULL DEFAULT 'PENDING',
+        `tenant_id` varchar(36) DEFAULT NULL,
+        `zone_id` varchar(36) NOT NULL,
+        `action` enum('CREATE','DELETE','UPDATE','NONE') NOT NULL DEFAULT 'CREATE',
+        `serial` int NOT NULL DEFAULT '1',
+        PRIMARY KEY (`id`),
+        KEY `records_recordset_id_idx` (`recordset_id`),
+        KEY `records_zone_id_idx` (`zone_id`)
+    );

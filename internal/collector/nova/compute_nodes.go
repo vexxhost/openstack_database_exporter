@@ -3,11 +3,13 @@ package nova
 import (
 	"context"
 	"log/slog"
+	"slices"
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/vexxhost/openstack_database_exporter/internal/db/nova"
 	"github.com/vexxhost/openstack_database_exporter/internal/db/nova_api"
+	"github.com/vexxhost/openstack_database_exporter/internal/db/placement"
 )
 
 // ComputeNodesCollector collects metrics about Nova compute nodes
@@ -15,19 +17,21 @@ type ComputeNodesCollector struct {
 	logger             *slog.Logger
 	novaDB             *nova.Queries
 	novaAPIDB          *nova_api.Queries
+	placementDB        *placement.Queries
 	computeNodeMetrics map[string]*prometheus.Desc
 }
 
 // NewComputeNodesCollector creates a new compute nodes collector
-func NewComputeNodesCollector(logger *slog.Logger, novaDB *nova.Queries, novaAPIDB *nova_api.Queries) *ComputeNodesCollector {
+func NewComputeNodesCollector(logger *slog.Logger, novaDB *nova.Queries, novaAPIDB *nova_api.Queries, placementDB *placement.Queries) *ComputeNodesCollector {
 	return &ComputeNodesCollector{
 		logger: logger.With(
 			"namespace", Namespace,
 			"subsystem", Subsystem,
 			"collector", "compute_nodes",
 		),
-		novaDB:    novaDB,
-		novaAPIDB: novaAPIDB,
+		novaDB:      novaDB,
+		novaAPIDB:   novaAPIDB,
+		placementDB: placementDB,
 		computeNodeMetrics: map[string]*prometheus.Desc{
 			"current_workload": prometheus.NewDesc(
 				prometheus.BuildFQName(Namespace, Subsystem, "current_workload"),
@@ -100,23 +104,76 @@ func (c *ComputeNodesCollector) Collect(ch chan<- prometheus.Metric) error {
 }
 
 func (c *ComputeNodesCollector) collectComputeNodeMetrics(ch chan<- prometheus.Metric) error {
-	computeNodes, err := c.novaDB.GetComputeNodes(context.Background())
+	ctx := context.Background()
+
+	computeNodes, err := c.novaDB.GetComputeNodes(ctx)
 	if err != nil {
 		return err
 	}
 
-	// Get aggregates info for compute nodes
-	aggregates, err := c.novaAPIDB.GetAggregateHosts(context.Background())
+	// Get aggregate hosts and metadata to build AZ and aggregate maps
+	aggHosts, err := c.novaAPIDB.GetAggregateHostMap(ctx)
 	if err != nil {
 		c.logger.Error("Failed to get aggregate hosts", "error", err)
 	}
 
-	// Build a map of hostname -> aggregates
-	hostAggregates := make(map[string][]string)
-	for _, agg := range aggregates {
-		hostname := agg.Host.String
-		if hostname != "" {
-			hostAggregates[hostname] = append(hostAggregates[hostname], agg.AggregateName.String)
+	aggMeta, err := c.novaAPIDB.GetAggregateMetadata(ctx)
+	if err != nil {
+		c.logger.Error("Failed to get aggregate metadata", "error", err)
+	}
+
+	// Build hostname -> PCPU inventory total map from placement. Used as a
+	// fallback for vcpus_available on dedicated-CPU hosts, where
+	// compute_nodes.vcpus is 0 because CPUs are tracked as PCPU inventory.
+	pcpuTotalByHost := make(map[string]int32)
+	if c.placementDB != nil {
+		resources, err := c.placementDB.GetResourceMetrics(ctx)
+		if err != nil {
+			c.logger.Error("Failed to get placement resource metrics", "error", err)
+		} else {
+			for _, r := range resources {
+				if r.ResourceType == "PCPU" && r.Hostname.Valid {
+					pcpuTotalByHost[r.Hostname.String] = r.Total
+				}
+			}
+		}
+	}
+
+	// Build map: aggregate_id -> metadata keys
+	aggMetaKeys := make(map[int32][]string)
+	aggAZ := make(map[int32]string)
+	for _, m := range aggMeta {
+		aggMetaKeys[m.AggregateID] = append(aggMetaKeys[m.AggregateID], m.Key)
+		if m.Key == "availability_zone" && m.Value.Valid && m.Value.String != "" {
+			aggAZ[m.AggregateID] = m.Value.String
+		}
+	}
+
+	// isAzAggregate: aggregate has exactly one metadata key and it's "availability_zone"
+	isAzAggregate := func(aggID int32) bool {
+		keys := aggMetaKeys[aggID]
+		if len(keys) == 1 && keys[0] == "availability_zone" {
+			return true
+		}
+		return false
+	}
+
+	// Build host -> AZ map and host -> non-AZ aggregate names map
+	hostToAZ := make(map[string]string)
+	hostToAggregates := make(map[string][]string)
+	for _, ah := range aggHosts {
+		host := ah.Host.String
+		if host == "" {
+			continue
+		}
+		if az, ok := aggAZ[ah.AggregateID]; ok {
+			hostToAZ[host] = az
+		}
+		if !isAzAggregate(ah.AggregateID) {
+			name := ah.AggregateName.String
+			if name != "" {
+				hostToAggregates[host] = append(hostToAggregates[host], name)
+			}
 		}
 	}
 
@@ -126,13 +183,19 @@ func (c *ComputeNodesCollector) collectComputeNodeMetrics(ch chan<- prometheus.M
 			continue
 		}
 
-		// Get aggregates for this host
-		var aggregatesStr string
-		if aggList, exists := hostAggregates[hostname]; exists {
-			aggregatesStr = strings.Join(aggList, ",")
+		// Use node.Host (service host) to look up AZ and aggregates
+		host := node.Host.String
+
+		availabilityZone := ""
+		if az, ok := hostToAZ[host]; ok {
+			availabilityZone = az
 		}
 
-		availabilityZone := "" // Compute nodes don't have direct AZ assignment
+		var aggregatesStr string
+		if aggList, exists := hostToAggregates[host]; exists {
+			slices.Sort(aggList)
+			aggregatesStr = strings.Join(aggList, ",")
+		}
 
 		ch <- prometheus.MustNewConstMetric(
 			c.computeNodeMetrics["current_workload"],
@@ -183,10 +246,16 @@ func (c *ComputeNodesCollector) collectComputeNodeMetrics(ch chan<- prometheus.M
 			aggregatesStr, availabilityZone, hostname,
 		)
 
+		vcpusAvailable := node.Vcpus
+		if vcpusAvailable == 0 {
+			if pcpu, ok := pcpuTotalByHost[hostname]; ok {
+				vcpusAvailable = pcpu
+			}
+		}
 		ch <- prometheus.MustNewConstMetric(
 			c.computeNodeMetrics["vcpus_available"],
 			prometheus.GaugeValue,
-			float64(node.Vcpus-node.VcpusUsed),
+			float64(vcpusAvailable),
 			aggregatesStr, availabilityZone, hostname,
 		)
 

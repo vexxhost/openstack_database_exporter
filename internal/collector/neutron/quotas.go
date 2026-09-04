@@ -44,7 +44,7 @@ func init() {
 		quotaDescs[r] = prometheus.NewDesc(
 			prometheus.BuildFQName(Namespace, Subsystem, "quota_"+r),
 			"quota_"+r,
-			[]string{"tenant", "type"},
+			[]string{"tenant", "tenant_id", "type"},
 			nil,
 		)
 	}
@@ -113,32 +113,43 @@ func (c *QuotaCollector) Collect(ch chan<- prometheus.Metric) {
 		projectUsage[pid][rc.Resource] = rc.Cnt
 	}
 
-	// Collect all project IDs: union of DB projects and keystone projects
-	allProjectIDs := make(map[string]string) // projectID -> projectName
+	// Emit metrics for all active Keystone projects, using DB overrides where available.
+	// This filters out stale/deleted projects that remain in the quota DB.
+	keystoneProjects := c.projectResolver.AllProjects()
+	keystoneAvailable := len(keystoneProjects) > 0
 
-	for pid := range projectLimits {
-		name, _ := c.projectResolver.Resolve(pid)
-		allProjectIDs[pid] = name
+	// Build the set of project IDs to emit: all Keystone projects (if available),
+	// otherwise fall back to DB projects only.
+	type projectEntry struct {
+		id   string
+		name string
 	}
+	var projectsToEmit []projectEntry
 
-	for pid, info := range c.projectResolver.AllProjects() {
-		if _, exists := allProjectIDs[pid]; !exists {
-			allProjectIDs[pid] = info.Name
+	if keystoneAvailable {
+		for pid, info := range keystoneProjects {
+			projectsToEmit = append(projectsToEmit, projectEntry{id: pid, name: info.Name})
+		}
+	} else {
+		for pid := range projectLimits {
+			name, _ := c.projectResolver.Resolve(pid)
+			projectsToEmit = append(projectsToEmit, projectEntry{id: pid, name: name})
 		}
 	}
 
-	// Emit metrics for all projects
-	for projectID, projectName := range allProjectIDs {
-		limits := projectLimits[projectID]
-		usage := projectUsage[projectID]
+	for _, p := range projectsToEmit {
+		limits := projectLimits[p.id]
+		usage := projectUsage[p.id]
 
 		for _, resource := range quotaResources {
 			desc := quotaDescs[resource]
 
 			// Limit: explicit override or default
 			limit := neutronDefaultQuotas[resource]
-			if explicitLimit, ok := limits[resource]; ok {
-				limit = explicitLimit
+			if limits != nil {
+				if explicitLimit, ok := limits[resource]; ok {
+					limit = explicitLimit
+				}
 			}
 
 			// Used: resource count or 0
@@ -147,9 +158,9 @@ func (c *QuotaCollector) Collect(ch chan<- prometheus.Metric) {
 				used = usage[resource]
 			}
 
-			ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, float64(limit), projectName, "limit")
-			ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, 0, projectName, "reserved")
-			ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, float64(used), projectName, "used")
+			ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, float64(limit), p.name, p.id, "limit")
+			ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, 0, p.name, p.id, "reserved")
+			ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, float64(used), p.name, p.id, "used")
 		}
 	}
 }

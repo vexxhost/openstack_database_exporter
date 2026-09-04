@@ -61,32 +61,32 @@ var (
 	taskStateOverrides = map[string]map[string]string{
 		"active": {
 			"shelving":                      "SHELVED",
-			"shelving_image_pending_upload":  "SHELVED",
-			"shelving_image_uploading":       "SHELVED",
-			"shelving_offloading":            "SHELVED",
-			"rebuilding":                     "REBUILD",
-			"rebuild_block_device_mapping":   "REBUILD",
-			"rebuild_spawning":               "REBUILD",
-			"migrating":                      "MIGRATING",
-			"resize_prep":                    "RESIZE",
-			"resize_migrating":               "RESIZE",
-			"resize_migrated":                "RESIZE",
-			"resize_finish":                  "RESIZE",
+			"shelving_image_pending_upload": "SHELVED",
+			"shelving_image_uploading":      "SHELVED",
+			"shelving_offloading":           "SHELVED",
+			"rebuilding":                    "REBUILD",
+			"rebuild_block_device_mapping":  "REBUILD",
+			"rebuild_spawning":              "REBUILD",
+			"migrating":                     "MIGRATING",
+			"resize_prep":                   "RESIZE",
+			"resize_migrating":              "RESIZE",
+			"resize_migrated":               "RESIZE",
+			"resize_finish":                 "RESIZE",
 		},
 		"stopped": {
-			"resize_prep":                    "RESIZE",
-			"resize_migrating":               "RESIZE",
-			"resize_migrated":                "RESIZE",
-			"resize_finish":                  "RESIZE",
-			"rebuilding":                     "REBUILD",
-			"rebuild_block_device_mapping":   "REBUILD",
-			"rebuild_spawning":               "REBUILD",
+			"resize_prep":                  "RESIZE",
+			"resize_migrating":             "RESIZE",
+			"resize_migrated":              "RESIZE",
+			"resize_finish":                "RESIZE",
+			"rebuilding":                   "REBUILD",
+			"rebuild_block_device_mapping": "REBUILD",
+			"rebuild_spawning":             "REBUILD",
 		},
 		"resized": {
-			"resize_reverting":               "REVERT_RESIZE",
+			"resize_reverting": "REVERT_RESIZE",
 		},
 		"paused": {
-			"migrating":                      "MIGRATING",
+			"migrating": "MIGRATING",
 		},
 	}
 )
@@ -128,12 +128,6 @@ func NewServerCollector(logger *slog.Logger, novaDB *nova.Queries, novaAPIDB *no
 				nil,
 				nil,
 			),
-			"availability_zones": prometheus.NewDesc(
-				prometheus.BuildFQName(Namespace, Subsystem, "availability_zones"),
-				"availability_zones",
-				nil,
-				nil,
-			),
 		},
 	}
 }
@@ -168,14 +162,10 @@ func (c *ServerCollector) collectServerMetrics(ch chan<- prometheus.Metric) erro
 		flavorIDMap[f.ID] = f.Flavorid
 	}
 
-	// Count total VMs and availability zones
+	// Count total VMs
 	totalVMs := len(instances)
-	azSet := make(map[string]bool)
 
 	for _, instance := range instances {
-		if instance.AvailabilityZone.Valid && instance.AvailabilityZone.String != "" {
-			azSet[instance.AvailabilityZone.String] = true
-		}
 
 		// Server local GB - using root_gb from instance
 		ch <- prometheus.MustNewConstMetric(
@@ -235,13 +225,6 @@ func (c *ServerCollector) collectServerMetrics(ch chan<- prometheus.Metric) erro
 		c.serverMetrics["total_vms"],
 		prometheus.GaugeValue,
 		float64(totalVMs),
-	)
-
-	// Emit availability zones count
-	ch <- prometheus.MustNewConstMetric(
-		c.serverMetrics["availability_zones"],
-		prometheus.GaugeValue,
-		float64(len(azSet)),
 	)
 
 	return nil
