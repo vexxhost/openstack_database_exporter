@@ -8,8 +8,8 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/prometheus/client_golang/prometheus"
-	keystonedb "github.com/vexxhost/openstack_database_exporter/internal/db/keystone"
 	"github.com/vexxhost/openstack_database_exporter/internal/testutil"
+	keystonedb "github.com/vexxhost/openstackdb/keystone/db"
 )
 
 func TestProjectsCollector(t *testing.T) {
@@ -27,7 +27,7 @@ func TestProjectsCollector(t *testing.T) {
 				).AddRow(
 					"0cbd49cbf76d405d9c86562e1d579bd3", "demo", "Demo Project", 1, "default", "", 0, "",
 				)
-				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetProjectMetrics)).WillReturnRows(projectRows)
+				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.ListProjects)).WillReturnRows(projectRows)
 			},
 			ExpectedMetrics: `# HELP openstack_identity_project_info project_info
 # TYPE openstack_identity_project_info gauge
@@ -46,7 +46,7 @@ openstack_identity_projects 3
 				projectRows := sqlmock.NewRows([]string{
 					"id", "name", "description", "enabled", "domain_id", "parent_id", "is_domain", "tags",
 				})
-				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetProjectMetrics)).WillReturnRows(projectRows)
+				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.ListProjects)).WillReturnRows(projectRows)
 			},
 			ExpectedMetrics: `# HELP openstack_identity_projects projects
 # TYPE openstack_identity_projects gauge
@@ -62,7 +62,7 @@ openstack_identity_projects 0
 				}).AddRow(
 					"project-1", "project-1", "Disabled project", 0, "default", "parent-1", 1, "tag1,tag2",
 				)
-				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetProjectMetrics)).WillReturnRows(projectRows)
+				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.ListProjects)).WillReturnRows(projectRows)
 			},
 			ExpectedMetrics: `# HELP openstack_identity_project_info project_info
 # TYPE openstack_identity_project_info gauge
@@ -81,7 +81,7 @@ openstack_identity_projects 1
 				}).AddRow(
 					"project-1", "project-1", "Project description", nil, "default", "", 0, nil,
 				)
-				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetProjectMetrics)).WillReturnRows(projectRows)
+				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.ListProjects)).WillReturnRows(projectRows)
 			},
 			ExpectedMetrics: `# HELP openstack_identity_project_info project_info
 # TYPE openstack_identity_project_info gauge
@@ -94,7 +94,7 @@ openstack_identity_projects 1
 		{
 			Name: "database error on project query",
 			SetupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetProjectMetrics)).WillReturnError(sql.ErrConnDone)
+				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.ListProjects)).WillReturnError(sql.ErrConnDone)
 			},
 			ExpectedMetrics: ``,
 		},

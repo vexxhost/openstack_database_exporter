@@ -8,8 +8,8 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/prometheus/client_golang/prometheus"
-	ironicdb "github.com/vexxhost/openstack_database_exporter/internal/db/ironic"
 	"github.com/vexxhost/openstack_database_exporter/internal/testutil"
+	ironicdb "github.com/vexxhost/openstackdb/ironic/db"
 )
 
 func TestBaremetalCollector(t *testing.T) {
@@ -24,7 +24,7 @@ func TestBaremetalCollector(t *testing.T) {
 					"550e8400-e29b-41d4-a716-446655440000", "node-1", "power on", "active", false,
 					"baremetal", true, false, "",
 				)
-				mock.ExpectQuery(regexp.QuoteMeta(ironicdb.GetNodeMetrics)).WillReturnRows(rows)
+				mock.ExpectQuery(regexp.QuoteMeta(ironicdb.GetNodeList)).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_ironic_node Ironic node status
 # TYPE openstack_ironic_node gauge
@@ -50,7 +50,7 @@ openstack_ironic_up 1
 					"ggg-hhh-iii", "node-retired", "power off", "manageable", false,
 					"baremetal", false, true, "end of life",
 				)
-				mock.ExpectQuery(regexp.QuoteMeta(ironicdb.GetNodeMetrics)).WillReturnRows(rows)
+				mock.ExpectQuery(regexp.QuoteMeta(ironicdb.GetNodeList)).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_ironic_node Ironic node status
 # TYPE openstack_ironic_node gauge
@@ -65,7 +65,7 @@ openstack_ironic_up 1
 		{
 			Name: "database connection failure",
 			SetupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(regexp.QuoteMeta(ironicdb.GetNodeMetrics)).WillReturnError(sql.ErrConnDone)
+				mock.ExpectQuery(regexp.QuoteMeta(ironicdb.GetNodeList)).WillReturnError(sql.ErrConnDone)
 			},
 			ExpectedMetrics: `# HELP openstack_ironic_up Whether the Ironic baremetal service is up
 # TYPE openstack_ironic_up gauge
@@ -85,7 +85,7 @@ openstack_ironic_up 0
 					"550e8400-e29b-41d4-a716-446655440000", "node-1", "power on", "active", false,
 					"baremetal", true, false, "",
 				)
-				mock.ExpectQuery(regexp.QuoteMeta(ironicdb.GetNodeMetrics)).WillReturnRows(rows)
+				mock.ExpectQuery(regexp.QuoteMeta(ironicdb.GetNodeList)).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_ironic_node Ironic node status
 # TYPE openstack_ironic_node gauge
@@ -102,7 +102,7 @@ openstack_ironic_up 1
 					"uuid", "name", "power_state", "provision_state", "maintenance",
 					"resource_class", "console_enabled", "retired", "retired_reason",
 				})
-				mock.ExpectQuery(regexp.QuoteMeta(ironicdb.GetNodeMetrics)).WillReturnRows(rows)
+				mock.ExpectQuery(regexp.QuoteMeta(ironicdb.GetNodeList)).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_ironic_up Whether the Ironic baremetal service is up
 # TYPE openstack_ironic_up gauge
@@ -119,7 +119,7 @@ openstack_ironic_up 1
 					"uuid-123", nil, nil, nil, nil,
 					nil, nil, nil, "",
 				)
-				mock.ExpectQuery(regexp.QuoteMeta(ironicdb.GetNodeMetrics)).WillReturnRows(rows)
+				mock.ExpectQuery(regexp.QuoteMeta(ironicdb.GetNodeList)).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_ironic_node Ironic node status
 # TYPE openstack_ironic_node gauge

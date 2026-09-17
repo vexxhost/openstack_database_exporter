@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	octaviadb "github.com/vexxhost/openstack_database_exporter/internal/db/octavia"
 	"github.com/vexxhost/openstack_database_exporter/internal/testutil"
+	octaviadb "github.com/vexxhost/openstackdb/octavia/db/repositories"
 )
 
 func TestAmphoraCollector(t *testing.T) {
@@ -28,7 +28,7 @@ func TestAmphoraCollector(t *testing.T) {
 					"192.168.0.17", "10.0.0.6", "BACKUP", time.Date(2020, 8, 8, 23, 44, 30, 0, time.UTC),
 				)
 
-				mock.ExpectQuery(octaviadb.GetAllAmphora).WillReturnRows(rows)
+				mock.ExpectQuery(octaviadb.AmphoraGetAll).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_loadbalancer_amphora_status amphora_status
 # TYPE openstack_loadbalancer_amphora_status gauge
@@ -43,7 +43,7 @@ openstack_loadbalancer_total_amphorae 2
 			Name: "empty results",
 			SetupMock: func(mock sqlmock.Sqlmock) {
 				rows := sqlmock.NewRows(cols)
-				mock.ExpectQuery(octaviadb.GetAllAmphora).WillReturnRows(rows)
+				mock.ExpectQuery(octaviadb.AmphoraGetAll).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_loadbalancer_total_amphorae total_amphorae
 # TYPE openstack_loadbalancer_total_amphorae gauge
@@ -57,7 +57,7 @@ openstack_loadbalancer_total_amphorae 0
 					"aaa-bbb-ccc", nil, "BOOTING", nil,
 					nil, nil, nil, nil,
 				)
-				mock.ExpectQuery(octaviadb.GetAllAmphora).WillReturnRows(rows)
+				mock.ExpectQuery(octaviadb.AmphoraGetAll).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_loadbalancer_amphora_status amphora_status
 # TYPE openstack_loadbalancer_amphora_status gauge
@@ -78,7 +78,7 @@ openstack_loadbalancer_total_amphorae 1
 					AddRow("id-5", nil, "PENDING_DELETE", nil, nil, nil, nil, nil).
 					AddRow("id-6", nil, "ERROR", nil, nil, nil, nil, nil).
 					AddRow("id-7", nil, "UNKNOWN_STATUS", nil, nil, nil, nil, nil)
-				mock.ExpectQuery(octaviadb.GetAllAmphora).WillReturnRows(rows)
+				mock.ExpectQuery(octaviadb.AmphoraGetAll).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_loadbalancer_amphora_status amphora_status
 # TYPE openstack_loadbalancer_amphora_status gauge
@@ -101,7 +101,7 @@ openstack_loadbalancer_total_amphorae 7
 					"single-id", "compute-123", "ALLOCATED", "lb-456",
 					"10.0.0.1", "10.0.0.2", "STANDALONE", time.Date(2025, 12, 31, 23, 59, 59, 0, time.UTC),
 				)
-				mock.ExpectQuery(octaviadb.GetAllAmphora).WillReturnRows(rows)
+				mock.ExpectQuery(octaviadb.AmphoraGetAll).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_loadbalancer_amphora_status amphora_status
 # TYPE openstack_loadbalancer_amphora_status gauge
@@ -114,7 +114,7 @@ openstack_loadbalancer_total_amphorae 1
 		{
 			Name: "query error",
 			SetupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(octaviadb.GetAllAmphora).WillReturnError(sql.ErrConnDone)
+				mock.ExpectQuery(octaviadb.AmphoraGetAll).WillReturnError(sql.ErrConnDone)
 			},
 			ExpectedMetrics: "",
 			ExpectError:     true,

@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	keystonedb "github.com/vexxhost/openstack_database_exporter/internal/db/keystone"
 	"github.com/vexxhost/openstack_database_exporter/internal/testutil"
+	keystonedb "github.com/vexxhost/openstackdb/keystone/db"
 )
 
 func TestIdentityCollector(t *testing.T) {
@@ -22,7 +22,7 @@ func TestIdentityCollector(t *testing.T) {
 				}).AddRow(
 					"default", "Default", "Default domain", 1,
 				)
-				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetDomainMetrics)).WillReturnRows(domainRows)
+				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.ListDomains)).WillReturnRows(domainRows)
 
 				// Setup project metrics query
 				projectRows := sqlmock.NewRows([]string{
@@ -34,7 +34,7 @@ func TestIdentityCollector(t *testing.T) {
 				).AddRow(
 					"0cbd49cbf76d405d9c86562e1d579bd3", "demo", "Demo Project", 1, "default", "", 0, "",
 				)
-				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetProjectMetrics)).WillReturnRows(projectRows)
+				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.ListProjects)).WillReturnRows(projectRows)
 
 				// Setup group metrics query
 				groupRows := sqlmock.NewRows([]string{
@@ -44,7 +44,7 @@ func TestIdentityCollector(t *testing.T) {
 				).AddRow(
 					"group-2", "default", "test-group-2", "Test group 2",
 				)
-				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetGroupMetrics)).WillReturnRows(groupRows)
+				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.ListGroups)).WillReturnRows(groupRows)
 
 				// Setup region metrics query
 				regionRows := sqlmock.NewRows([]string{
@@ -52,7 +52,7 @@ func TestIdentityCollector(t *testing.T) {
 				}).AddRow(
 					"RegionOne", "", "",
 				)
-				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetRegionMetrics)).WillReturnRows(regionRows)
+				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.ListRegions)).WillReturnRows(regionRows)
 
 				// Setup user metrics query
 				userRows := sqlmock.NewRows([]string{
@@ -62,7 +62,7 @@ func TestIdentityCollector(t *testing.T) {
 				).AddRow(
 					"user-2", 1, "default", "", nil, nil,
 				)
-				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetUserMetrics)).WillReturnRows(userRows)
+				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.ListUsers)).WillReturnRows(userRows)
 			},
 			ExpectedMetrics: `# HELP openstack_identity_domain_info domain_info
 # TYPE openstack_identity_domain_info gauge
@@ -96,7 +96,7 @@ openstack_identity_users 2
 			Name: "domain collector fails, up metric should be 0",
 			SetupMock: func(mock sqlmock.Sqlmock) {
 				// Domain query fails
-				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetDomainMetrics)).WillReturnError(sql.ErrConnDone)
+				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.ListDomains)).WillReturnError(sql.ErrConnDone)
 
 				// Other collectors should still be called
 				projectRows := sqlmock.NewRows([]string{
@@ -104,28 +104,28 @@ openstack_identity_users 2
 				}).AddRow(
 					"admin", "admin", "", 1, "default", "", 0, "",
 				)
-				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetProjectMetrics)).WillReturnRows(projectRows)
+				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.ListProjects)).WillReturnRows(projectRows)
 
 				groupRows := sqlmock.NewRows([]string{
 					"id", "domain_id", "name", "description",
 				}).AddRow(
 					"group-1", "default", "test-group", "Test group",
 				)
-				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetGroupMetrics)).WillReturnRows(groupRows)
+				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.ListGroups)).WillReturnRows(groupRows)
 
 				regionRows := sqlmock.NewRows([]string{
 					"id", "description", "parent_region_id",
 				}).AddRow(
 					"RegionOne", "", "",
 				)
-				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetRegionMetrics)).WillReturnRows(regionRows)
+				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.ListRegions)).WillReturnRows(regionRows)
 
 				userRows := sqlmock.NewRows([]string{
 					"id", "enabled", "domain_id", "default_project_id", "created_at", "last_active_at",
 				}).AddRow(
 					"user-1", 1, "default", "admin", nil, nil,
 				)
-				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetUserMetrics)).WillReturnRows(userRows)
+				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.ListUsers)).WillReturnRows(userRows)
 			},
 			ExpectedMetrics: `# HELP openstack_identity_groups groups
 # TYPE openstack_identity_groups gauge
@@ -150,11 +150,11 @@ openstack_identity_users 1
 		{
 			Name: "all collectors fail, only up metric with value 0",
 			SetupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetDomainMetrics)).WillReturnError(sql.ErrConnDone)
-				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetProjectMetrics)).WillReturnError(sql.ErrConnDone)
-				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetGroupMetrics)).WillReturnError(sql.ErrConnDone)
-				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetRegionMetrics)).WillReturnError(sql.ErrConnDone)
-				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetUserMetrics)).WillReturnError(sql.ErrConnDone)
+				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.ListDomains)).WillReturnError(sql.ErrConnDone)
+				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.ListProjects)).WillReturnError(sql.ErrConnDone)
+				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.ListGroups)).WillReturnError(sql.ErrConnDone)
+				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.ListRegions)).WillReturnError(sql.ErrConnDone)
+				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.ListUsers)).WillReturnError(sql.ErrConnDone)
 			},
 			ExpectedMetrics: `# HELP openstack_identity_up up
 # TYPE openstack_identity_up gauge

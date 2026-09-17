@@ -6,7 +6,7 @@ import (
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	cinderdb "github.com/vexxhost/openstack_database_exporter/internal/db/cinder"
+	cinderdb "github.com/vexxhost/openstackdb/cinder/db"
 )
 
 var (
@@ -43,7 +43,7 @@ func (c *SnapshotsCollector) Describe(ch chan<- *prometheus.Desc) {
 func (c *SnapshotsCollector) Collect(ch chan<- prometheus.Metric) {
 	ctx := context.Background()
 
-	count, err := c.queries.GetSnapshotCount(ctx)
+	count, err := c.queries.SnapshotCount(ctx)
 	if err != nil {
 		c.logger.Error("failed to query", "error", err)
 		return

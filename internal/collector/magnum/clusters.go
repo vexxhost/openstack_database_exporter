@@ -7,7 +7,7 @@ import (
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	magnumdb "github.com/vexxhost/openstack_database_exporter/internal/db/magnum"
+	magnumdb "github.com/vexxhost/openstackdb/magnum/db"
 )
 
 var (
@@ -82,7 +82,7 @@ func (c *ClustersCollector) Describe(ch chan<- *prometheus.Desc) {
 func (c *ClustersCollector) Collect(ch chan<- prometheus.Metric) {
 	ctx := context.Background()
 
-	clusters, err := c.queries.GetClusterMetrics(ctx)
+	clusters, err := c.queries.GetClusterList(ctx)
 	if err != nil {
 		c.logger.Error("Failed to get cluster metrics", "error", err)
 		return

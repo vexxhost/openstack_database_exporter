@@ -6,9 +6,9 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/project"
-	novadb "github.com/vexxhost/openstack_database_exporter/internal/db/nova"
-	novaapidb "github.com/vexxhost/openstack_database_exporter/internal/db/nova_api"
-	placementdb "github.com/vexxhost/openstack_database_exporter/internal/db/placement"
+	novaapidb "github.com/vexxhost/openstackdb/nova/db/api"
+	novadb "github.com/vexxhost/openstackdb/nova/db/main"
+	placementdb "github.com/vexxhost/openstackdb/placement/objects"
 )
 
 var (
@@ -24,12 +24,12 @@ type ComputeCollector struct {
 	novaDB                *sql.DB
 	novaApiDB             *sql.DB
 	logger                *slog.Logger
-	servicesCollector      *ServicesCollector
-	flavorsCollector       *FlavorsCollector
-	quotasCollector        *QuotasCollector
-	limitsCollector        *LimitsCollector
-	computeNodesCollector  *ComputeNodesCollector
-	serverCollector        *ServerCollector
+	servicesCollector     *ServicesCollector
+	flavorsCollector      *FlavorsCollector
+	quotasCollector       *QuotasCollector
+	limitsCollector       *LimitsCollector
+	computeNodesCollector *ComputeNodesCollector
+	serverCollector       *ServerCollector
 }
 
 func NewComputeCollector(novaDB, novaApiDB *sql.DB, placementDB *placementdb.Queries, projectResolver *project.Resolver, logger *slog.Logger) *ComputeCollector {
@@ -40,12 +40,12 @@ func NewComputeCollector(novaDB, novaApiDB *sql.DB, placementDB *placementdb.Que
 		novaDB:                novaDB,
 		novaApiDB:             novaApiDB,
 		logger:                logger,
-		servicesCollector:      NewServicesCollector(logger, novaQueries, novaApiQueries),
-		flavorsCollector:       NewFlavorsCollector(logger, novaQueries, novaApiQueries),
-		quotasCollector:        NewQuotasCollector(logger, novaQueries, novaApiQueries, placementDB, projectResolver),
-		limitsCollector:        NewLimitsCollector(logger, novaQueries, novaApiQueries, placementDB, projectResolver),
-		computeNodesCollector:  NewComputeNodesCollector(logger, novaQueries, novaApiQueries),
-		serverCollector:        NewServerCollector(logger, novaQueries, novaApiQueries),
+		servicesCollector:     NewServicesCollector(logger, novaQueries, novaApiQueries),
+		flavorsCollector:      NewFlavorsCollector(logger, novaQueries, novaApiQueries),
+		quotasCollector:       NewQuotasCollector(logger, novaQueries, novaApiQueries, placementDB, projectResolver),
+		limitsCollector:       NewLimitsCollector(logger, novaQueries, novaApiQueries, placementDB, projectResolver),
+		computeNodesCollector: NewComputeNodesCollector(logger, novaQueries, novaApiQueries),
+		serverCollector:       NewServerCollector(logger, novaQueries, novaApiQueries),
 	}
 }
 

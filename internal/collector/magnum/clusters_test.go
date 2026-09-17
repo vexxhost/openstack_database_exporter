@@ -8,8 +8,8 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/prometheus/client_golang/prometheus"
-	magnumdb "github.com/vexxhost/openstack_database_exporter/internal/db/magnum"
 	"github.com/vexxhost/openstack_database_exporter/internal/testutil"
+	magnumdb "github.com/vexxhost/openstackdb/magnum/db"
 )
 
 func TestClustersCollector(t *testing.T) {
@@ -23,7 +23,7 @@ func TestClustersCollector(t *testing.T) {
 					"273c39d5-fa17-4372-b6b1-93a572de2cef", "k8s", "31c1ee6c-081e-4f39-9f0f-f1d87a7defa1", "CREATE_FAILED", "0cbd49cbf76d405d9c86562e1d579bd3", int64(1), int64(1),
 				)
 
-				mock.ExpectQuery(regexp.QuoteMeta(magnumdb.GetClusterMetrics)).WillReturnRows(rows)
+				mock.ExpectQuery(regexp.QuoteMeta(magnumdb.GetClusterList)).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_container_infra_cluster_status cluster_status
 # TYPE openstack_container_infra_cluster_status gauge
@@ -46,7 +46,7 @@ openstack_container_infra_total_clusters 1
 					"cluster-3", "test-cluster-3", "stack-3", "DELETE_FAILED", "project-1", int64(2), int64(3),
 				)
 
-				mock.ExpectQuery(regexp.QuoteMeta(magnumdb.GetClusterMetrics)).WillReturnRows(rows)
+				mock.ExpectQuery(regexp.QuoteMeta(magnumdb.GetClusterList)).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_container_infra_cluster_status cluster_status
 # TYPE openstack_container_infra_cluster_status gauge
@@ -65,7 +65,7 @@ openstack_container_infra_total_clusters 3
 					"uuid", "name", "stack_id", "status", "project_id", "master_count", "node_count",
 				})
 
-				mock.ExpectQuery(regexp.QuoteMeta(magnumdb.GetClusterMetrics)).WillReturnRows(rows)
+				mock.ExpectQuery(regexp.QuoteMeta(magnumdb.GetClusterList)).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_container_infra_total_clusters total_clusters
 # TYPE openstack_container_infra_total_clusters gauge
@@ -81,7 +81,7 @@ openstack_container_infra_total_clusters 0
 					nil, nil, "", "UNKNOWN_STATUS", nil, int64(0), int64(0),
 				)
 
-				mock.ExpectQuery(regexp.QuoteMeta(magnumdb.GetClusterMetrics)).WillReturnRows(rows)
+				mock.ExpectQuery(regexp.QuoteMeta(magnumdb.GetClusterList)).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_container_infra_cluster_status cluster_status
 # TYPE openstack_container_infra_cluster_status gauge
@@ -94,7 +94,7 @@ openstack_container_infra_total_clusters 1
 		{
 			Name: "database query error",
 			SetupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(regexp.QuoteMeta(magnumdb.GetClusterMetrics)).WillReturnError(sql.ErrConnDone)
+				mock.ExpectQuery(regexp.QuoteMeta(magnumdb.GetClusterList)).WillReturnError(sql.ErrConnDone)
 			},
 			ExpectedMetrics: ``,
 		},

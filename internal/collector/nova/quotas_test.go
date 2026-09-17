@@ -9,9 +9,9 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/project"
-	novadb "github.com/vexxhost/openstack_database_exporter/internal/db/nova"
-	novaapidb "github.com/vexxhost/openstack_database_exporter/internal/db/nova_api"
 	"github.com/vexxhost/openstack_database_exporter/internal/testutil"
+	novaapidb "github.com/vexxhost/openstackdb/nova/db/api"
+	novadb "github.com/vexxhost/openstackdb/nova/db/main"
 )
 
 func TestQuotasCollector(t *testing.T) {
@@ -33,7 +33,7 @@ func TestQuotasCollector(t *testing.T) {
 
 				// Mock GetQuotaClassDefaults (empty result)
 				defaultRows := sqlmock.NewRows([]string{"resource", "hard_limit"})
-				mock.ExpectQuery(regexp.QuoteMeta(novaapidb.GetQuotaClassDefaults)).WillReturnRows(defaultRows)
+				mock.ExpectQuery(regexp.QuoteMeta(novaapidb.QuotaClassGetDefaults)).WillReturnRows(defaultRows)
 			},
 			ExpectedMetrics: ``,
 		},
@@ -47,7 +47,7 @@ func TestQuotasCollector(t *testing.T) {
 
 				// Mock GetQuotaClassDefaults (empty result)
 				defaultRows := sqlmock.NewRows([]string{"resource", "hard_limit"})
-				mock.ExpectQuery(regexp.QuoteMeta(novaapidb.GetQuotaClassDefaults)).WillReturnRows(defaultRows)
+				mock.ExpectQuery(regexp.QuoteMeta(novaapidb.QuotaClassGetDefaults)).WillReturnRows(defaultRows)
 			},
 			ExpectedMetrics: ``,
 		},

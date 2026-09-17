@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/project"
-	cinderdb "github.com/vexxhost/openstack_database_exporter/internal/db/cinder"
+	cinderdb "github.com/vexxhost/openstackdb/cinder/db"
 )
 
 func TestLimitsCollector(t *testing.T) {
@@ -51,9 +51,9 @@ func TestLimitsCollector(t *testing.T) {
 					usageRows.AddRow(id, "backup_gigabytes", 0)
 				}
 
-				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.GetProjectQuotaLimits)).WillReturnRows(limitsRows)
-				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.GetProjectQuotaUsages)).WillReturnRows(usageRows)
-				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.GetVolumeTypes)).WillReturnRows(sqlmock.NewRows(vtCols))
+				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.QuotaGetProjectLimits)).WillReturnRows(limitsRows)
+				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.QuotaUsageGetAll)).WillReturnRows(usageRows)
+				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.VolumeTypeGetAll)).WillReturnRows(sqlmock.NewRows(vtCols))
 			},
 			ExpectedMetrics: `# HELP openstack_cinder_limits_backup_max_gb limits_backup_max_gb
 # TYPE openstack_cinder_limits_backup_max_gb gauge
@@ -100,9 +100,9 @@ openstack_cinder_limits_volume_used_gb{tenant="fdb8424c4e4f4c0ba32c52e2de3bd80e"
 		{
 			Name: "empty results",
 			SetupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.GetProjectQuotaLimits)).WillReturnRows(sqlmock.NewRows(limitsCols))
-				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.GetProjectQuotaUsages)).WillReturnRows(sqlmock.NewRows(usageCols))
-				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.GetVolumeTypes)).WillReturnRows(sqlmock.NewRows(vtCols))
+				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.QuotaGetProjectLimits)).WillReturnRows(sqlmock.NewRows(limitsCols))
+				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.QuotaUsageGetAll)).WillReturnRows(sqlmock.NewRows(usageCols))
+				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.VolumeTypeGetAll)).WillReturnRows(sqlmock.NewRows(vtCols))
 			},
 			ExpectedMetrics: "",
 		},
@@ -115,9 +115,9 @@ openstack_cinder_limits_volume_used_gb{tenant="fdb8424c4e4f4c0ba32c52e2de3bd80e"
 				usageRows := sqlmock.NewRows(usageCols).
 					AddRow("proj-abc", "gigabytes", 250).
 					AddRow("proj-abc", "backup_gigabytes", 75)
-				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.GetProjectQuotaLimits)).WillReturnRows(limitsRows)
-				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.GetProjectQuotaUsages)).WillReturnRows(usageRows)
-				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.GetVolumeTypes)).WillReturnRows(sqlmock.NewRows(vtCols))
+				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.QuotaGetProjectLimits)).WillReturnRows(limitsRows)
+				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.QuotaUsageGetAll)).WillReturnRows(usageRows)
+				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.VolumeTypeGetAll)).WillReturnRows(sqlmock.NewRows(vtCols))
 			},
 			ExpectedMetrics: `# HELP openstack_cinder_limits_backup_max_gb limits_backup_max_gb
 # TYPE openstack_cinder_limits_backup_max_gb gauge
@@ -140,9 +140,9 @@ openstack_cinder_limits_volume_used_gb{tenant="proj-abc",tenant_id="proj-abc"} 2
 					AddRow("proj-1", "gigabytes", 1000)
 				usageRows := sqlmock.NewRows(usageCols).
 					AddRow("proj-1", "gigabytes", 100)
-				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.GetProjectQuotaLimits)).WillReturnRows(limitsRows)
-				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.GetProjectQuotaUsages)).WillReturnRows(usageRows)
-				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.GetVolumeTypes)).WillReturnRows(sqlmock.NewRows(vtCols))
+				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.QuotaGetProjectLimits)).WillReturnRows(limitsRows)
+				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.QuotaUsageGetAll)).WillReturnRows(usageRows)
+				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.VolumeTypeGetAll)).WillReturnRows(sqlmock.NewRows(vtCols))
 			},
 			ExpectedMetrics: `# HELP openstack_cinder_limits_backup_max_gb limits_backup_max_gb
 # TYPE openstack_cinder_limits_backup_max_gb gauge
@@ -167,12 +167,12 @@ openstack_cinder_limits_volume_used_gb{tenant="proj-1",tenant_id="proj-1"} 100
 				usageRows := sqlmock.NewRows(usageCols).
 					AddRow("proj-1", "gigabytes", 50).
 					AddRow("proj-1", "backup_gigabytes", 10)
-				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.GetProjectQuotaLimits)).WillReturnRows(limitsRows)
-				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.GetProjectQuotaUsages)).WillReturnRows(usageRows)
+				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.QuotaGetProjectLimits)).WillReturnRows(limitsRows)
+				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.QuotaUsageGetAll)).WillReturnRows(usageRows)
 				vtRows := sqlmock.NewRows(vtCols).
 					AddRow("type-1", "standard").
 					AddRow("type-2", "__DEFAULT__")
-				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.GetVolumeTypes)).WillReturnRows(vtRows)
+				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.VolumeTypeGetAll)).WillReturnRows(vtRows)
 			},
 			ExpectedMetrics: `# HELP openstack_cinder_limits_backup_max_gb limits_backup_max_gb
 # TYPE openstack_cinder_limits_backup_max_gb gauge
@@ -202,12 +202,12 @@ openstack_cinder_volume_type_quota_gigabytes{tenant="proj-1",tenant_id="proj-1",
 				usageRows := sqlmock.NewRows(usageCols).
 					AddRow("proj-1", "gigabytes", 50).
 					AddRow("proj-1", "backup_gigabytes", 10)
-				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.GetProjectQuotaLimits)).WillReturnRows(limitsRows)
-				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.GetProjectQuotaUsages)).WillReturnRows(usageRows)
+				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.QuotaGetProjectLimits)).WillReturnRows(limitsRows)
+				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.QuotaUsageGetAll)).WillReturnRows(usageRows)
 				vtRows := sqlmock.NewRows(vtCols).
 					AddRow("type-1", "standard").
 					AddRow("type-2", "__DEFAULT__")
-				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.GetVolumeTypes)).WillReturnRows(vtRows)
+				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.VolumeTypeGetAll)).WillReturnRows(vtRows)
 			},
 			ExpectedMetrics: `# HELP openstack_cinder_limits_backup_max_gb limits_backup_max_gb
 # TYPE openstack_cinder_limits_backup_max_gb gauge
@@ -231,12 +231,12 @@ openstack_cinder_volume_type_quota_gigabytes{tenant="proj-1",tenant_id="proj-1",
 			Name: "usage without explicit quota (issue #92)",
 			SetupMock: func(mock sqlmock.Sqlmock) {
 				// Project has NO row in quotas table but DOES have usage in quota_usages
-				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.GetProjectQuotaLimits)).WillReturnRows(sqlmock.NewRows(limitsCols))
+				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.QuotaGetProjectLimits)).WillReturnRows(sqlmock.NewRows(limitsCols))
 				usageRows := sqlmock.NewRows(usageCols).
 					AddRow("proj-no-quota", "gigabytes", 150).
 					AddRow("proj-no-quota", "backup_gigabytes", 25)
-				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.GetProjectQuotaUsages)).WillReturnRows(usageRows)
-				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.GetVolumeTypes)).WillReturnRows(sqlmock.NewRows(vtCols))
+				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.QuotaUsageGetAll)).WillReturnRows(usageRows)
+				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.VolumeTypeGetAll)).WillReturnRows(sqlmock.NewRows(vtCols))
 			},
 			ExpectedMetrics: `# HELP openstack_cinder_limits_backup_max_gb limits_backup_max_gb
 # TYPE openstack_cinder_limits_backup_max_gb gauge
@@ -257,9 +257,9 @@ openstack_cinder_limits_volume_used_gb{tenant="proj-no-quota",tenant_id="proj-no
 			SetupMock: func(mock sqlmock.Sqlmock) {
 				limitsRows := sqlmock.NewRows(limitsCols).
 					AddRow(nil, "gigabytes", 1000)
-				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.GetProjectQuotaLimits)).WillReturnRows(limitsRows)
-				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.GetProjectQuotaUsages)).WillReturnRows(sqlmock.NewRows(usageCols))
-				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.GetVolumeTypes)).WillReturnRows(sqlmock.NewRows(vtCols))
+				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.QuotaGetProjectLimits)).WillReturnRows(limitsRows)
+				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.QuotaUsageGetAll)).WillReturnRows(sqlmock.NewRows(usageCols))
+				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.VolumeTypeGetAll)).WillReturnRows(sqlmock.NewRows(vtCols))
 			},
 			ExpectedMetrics: `# HELP openstack_cinder_limits_backup_max_gb limits_backup_max_gb
 # TYPE openstack_cinder_limits_backup_max_gb gauge
@@ -278,7 +278,7 @@ openstack_cinder_limits_volume_used_gb{tenant="",tenant_id=""} 0
 		{
 			Name: "query error",
 			SetupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.GetProjectQuotaLimits)).WillReturnError(sql.ErrConnDone)
+				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.QuotaGetProjectLimits)).WillReturnError(sql.ErrConnDone)
 			},
 			ExpectedMetrics: "",
 			ExpectError:     true,

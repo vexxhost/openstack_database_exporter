@@ -13,6 +13,7 @@ import (
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/mariadb"
+	"github.com/vexxhost/openstackdb/schema"
 )
 
 // containerName returns a unique name for a test container, keeping the service
@@ -36,7 +37,12 @@ func prepareInitScripts(t *testing.T, schemaFiles []string) []string {
 		if err != nil {
 			t.Fatalf("failed to resolve schema path %s: %v", sf, err)
 		}
-		content, err := os.ReadFile(absPath)
+		var content []byte
+		if _, relative, ok := strings.Cut(filepath.ToSlash(sf), "sql/"); ok {
+			content, err = schema.Files.ReadFile(relative)
+		} else {
+			content, err = os.ReadFile(absPath)
+		}
 		if err != nil {
 			t.Fatalf("failed to read schema file %s: %v", absPath, err)
 		}

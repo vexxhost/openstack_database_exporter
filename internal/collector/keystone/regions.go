@@ -6,7 +6,7 @@ import (
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	keystonedb "github.com/vexxhost/openstack_database_exporter/internal/db/keystone"
+	keystonedb "github.com/vexxhost/openstackdb/keystone/db"
 )
 
 var (
@@ -43,7 +43,7 @@ func (c *RegionsCollector) Describe(ch chan<- *prometheus.Desc) {
 func (c *RegionsCollector) Collect(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
 
-	regions, err := c.queries.GetRegionMetrics(ctx)
+	regions, err := c.queries.ListRegions(ctx)
 	if err != nil {
 		c.logger.Error("Failed to query regions", "error", err)
 		return err

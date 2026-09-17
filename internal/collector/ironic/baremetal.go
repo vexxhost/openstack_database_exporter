@@ -7,7 +7,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	ironicdb "github.com/vexxhost/openstack_database_exporter/internal/db/ironic"
+	ironicdb "github.com/vexxhost/openstackdb/ironic/db"
 )
 
 // BaremetalCollector is the umbrella collector for Ironic baremetal metrics.
@@ -49,7 +49,7 @@ func (c *BaremetalCollector) Collect(ch chan<- prometheus.Metric) {
 	ctx := context.Background()
 
 	// Query node metrics once and reuse for the nodes sub-collector
-	nodes, err := c.queries.GetNodeMetrics(ctx)
+	nodes, err := c.queries.GetNodeList(ctx)
 	if err != nil {
 		c.logger.Error("failed to query Ironic database", "error", err)
 		ch <- prometheus.MustNewConstMetric(c.upMetric, prometheus.GaugeValue, 0)

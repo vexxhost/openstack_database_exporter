@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	octaviadb "github.com/vexxhost/openstack_database_exporter/internal/db/octavia"
 	"github.com/vexxhost/openstack_database_exporter/internal/testutil"
+	octaviadb "github.com/vexxhost/openstackdb/octavia/db/repositories"
 )
 
 func TestLoadBalancerCollector_Collect(t *testing.T) {
@@ -24,7 +24,7 @@ func TestLoadBalancerCollector_Collect(t *testing.T) {
 					"ONLINE", "octavia", "203.0.113.50",
 				)
 
-				mock.ExpectQuery(octaviadb.GetAllLoadBalancersWithVip).WillReturnRows(rows)
+				mock.ExpectQuery(octaviadb.LoadBalancerGetAllWithVIP).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_loadbalancer_loadbalancer_status loadbalancer_status
 # TYPE openstack_loadbalancer_loadbalancer_status gauge
@@ -41,7 +41,7 @@ openstack_loadbalancer_up 1
 			Name: "empty results",
 			SetupMock: func(mock sqlmock.Sqlmock) {
 				rows := sqlmock.NewRows(cols)
-				mock.ExpectQuery(octaviadb.GetAllLoadBalancersWithVip).WillReturnRows(rows)
+				mock.ExpectQuery(octaviadb.LoadBalancerGetAllWithVIP).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_loadbalancer_total_loadbalancers total_loadbalancers
 # TYPE openstack_loadbalancer_total_loadbalancers gauge
@@ -58,7 +58,7 @@ openstack_loadbalancer_up 1
 					"lb-001", nil, nil, "PENDING_CREATE",
 					"OFFLINE", nil, nil,
 				)
-				mock.ExpectQuery(octaviadb.GetAllLoadBalancersWithVip).WillReturnRows(rows)
+				mock.ExpectQuery(octaviadb.LoadBalancerGetAllWithVIP).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_loadbalancer_loadbalancer_status loadbalancer_status
 # TYPE openstack_loadbalancer_loadbalancer_status gauge
@@ -81,7 +81,7 @@ openstack_loadbalancer_up 1
 					AddRow("lb-4", nil, nil, "ACTIVE", "ERROR", nil, nil).
 					AddRow("lb-5", nil, nil, "ACTIVE", "NO_MONITOR", nil, nil).
 					AddRow("lb-6", nil, nil, "ACTIVE", "UNKNOWN_OP", nil, nil)
-				mock.ExpectQuery(octaviadb.GetAllLoadBalancersWithVip).WillReturnRows(rows)
+				mock.ExpectQuery(octaviadb.LoadBalancerGetAllWithVIP).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_loadbalancer_loadbalancer_status loadbalancer_status
 # TYPE openstack_loadbalancer_loadbalancer_status gauge
@@ -106,7 +106,7 @@ openstack_loadbalancer_up 1
 					AddRow("lb-a", "proj-1", "web-lb", "ACTIVE", "ONLINE", "octavia", "10.0.0.1").
 					AddRow("lb-b", "proj-2", "api-lb", "PENDING_UPDATE", "DRAINING", "amphora", "10.0.0.2").
 					AddRow("lb-c", "proj-1", "internal-lb", "ERROR", "ERROR", "octavia", "10.0.0.3")
-				mock.ExpectQuery(octaviadb.GetAllLoadBalancersWithVip).WillReturnRows(rows)
+				mock.ExpectQuery(octaviadb.LoadBalancerGetAllWithVIP).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_loadbalancer_loadbalancer_status loadbalancer_status
 # TYPE openstack_loadbalancer_loadbalancer_status gauge
@@ -124,7 +124,7 @@ openstack_loadbalancer_up 1
 		{
 			Name: "handles query errors gracefully",
 			SetupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(octaviadb.GetAllLoadBalancersWithVip).WillReturnError(sql.ErrConnDone)
+				mock.ExpectQuery(octaviadb.LoadBalancerGetAllWithVIP).WillReturnError(sql.ErrConnDone)
 			},
 			ExpectedMetrics: `# HELP openstack_loadbalancer_up up
 # TYPE openstack_loadbalancer_up gauge

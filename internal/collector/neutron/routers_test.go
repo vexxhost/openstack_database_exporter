@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	neutrondb "github.com/vexxhost/openstack_database_exporter/internal/db/neutron"
 	"github.com/vexxhost/openstack_database_exporter/internal/testutil"
+	neutrondb "github.com/vexxhost/openstackdb/neutron/db"
 )
 
 func TestHARouterAgentPortBindingCollector(t *testing.T) {

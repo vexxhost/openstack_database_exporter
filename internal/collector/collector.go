@@ -18,8 +18,8 @@ import (
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/octavia"
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/placement"
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/project"
-	"github.com/vexxhost/openstack_database_exporter/internal/db"
-	keystonedb "github.com/vexxhost/openstack_database_exporter/internal/db/keystone"
+	db "github.com/vexxhost/openstackdb"
+	keystonedb "github.com/vexxhost/openstackdb/keystone/db"
 )
 
 const (

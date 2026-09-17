@@ -6,7 +6,7 @@ import (
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	cinderdb "github.com/vexxhost/openstack_database_exporter/internal/db/cinder"
+	cinderdb "github.com/vexxhost/openstackdb/cinder/db"
 )
 
 var (
@@ -50,7 +50,7 @@ func (c *AgentsCollector) Describe(ch chan<- *prometheus.Desc) {
 func (c *AgentsCollector) Collect(ch chan<- prometheus.Metric) {
 	ctx := context.Background()
 
-	services, err := c.queries.GetAllServices(ctx)
+	services, err := c.queries.ServiceGetAll(ctx)
 	if err != nil {
 		c.logger.Error("failed to query", "error", err)
 		return

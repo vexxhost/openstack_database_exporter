@@ -8,8 +8,8 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/prometheus/client_golang/prometheus"
-	keystonedb "github.com/vexxhost/openstack_database_exporter/internal/db/keystone"
 	"github.com/vexxhost/openstack_database_exporter/internal/testutil"
+	keystonedb "github.com/vexxhost/openstackdb/keystone/db"
 )
 
 func TestGroupsCollector(t *testing.T) {
@@ -25,7 +25,7 @@ func TestGroupsCollector(t *testing.T) {
 				).AddRow(
 					"group-2", "default", "test-group-2", "Test group 2",
 				)
-				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetGroupMetrics)).WillReturnRows(groupRows)
+				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.ListGroups)).WillReturnRows(groupRows)
 			},
 			ExpectedMetrics: `# HELP openstack_identity_groups groups
 # TYPE openstack_identity_groups gauge
@@ -39,7 +39,7 @@ openstack_identity_groups 2
 				groupRows := sqlmock.NewRows([]string{
 					"id", "domain_id", "name", "description",
 				})
-				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetGroupMetrics)).WillReturnRows(groupRows)
+				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.ListGroups)).WillReturnRows(groupRows)
 			},
 			ExpectedMetrics: `# HELP openstack_identity_groups groups
 # TYPE openstack_identity_groups gauge
@@ -49,7 +49,7 @@ openstack_identity_groups 0
 		{
 			Name: "database error on group query",
 			SetupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetGroupMetrics)).WillReturnError(sql.ErrConnDone)
+				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.ListGroups)).WillReturnError(sql.ErrConnDone)
 			},
 			ExpectedMetrics: ``,
 		},

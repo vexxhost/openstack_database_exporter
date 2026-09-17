@@ -8,9 +8,9 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/prometheus/client_golang/prometheus"
-	novadb "github.com/vexxhost/openstack_database_exporter/internal/db/nova"
-	novaapidb "github.com/vexxhost/openstack_database_exporter/internal/db/nova_api"
 	"github.com/vexxhost/openstack_database_exporter/internal/testutil"
+	novaapidb "github.com/vexxhost/openstackdb/nova/db/api"
+	novadb "github.com/vexxhost/openstackdb/nova/db/main"
 )
 
 func TestServicesCollector(t *testing.T) {
@@ -32,7 +32,7 @@ func TestServicesCollector(t *testing.T) {
 					"2023-12-18 09:30:00", 0, 29, 180, 0,
 				)
 
-				mock.ExpectQuery(regexp.QuoteMeta(novadb.GetServices)).WillReturnRows(rows)
+				mock.ExpectQuery(regexp.QuoteMeta(novadb.ServiceGetAll)).WillReturnRows(rows)
 			},
 			ExpectedMetrics: ``,
 		},
@@ -53,7 +53,7 @@ func TestServicesCollector(t *testing.T) {
 					"2023-12-18 10:02:00", 0, 29, 175, 0,
 				)
 
-				mock.ExpectQuery(regexp.QuoteMeta(novadb.GetServices)).WillReturnRows(rows)
+				mock.ExpectQuery(regexp.QuoteMeta(novadb.ServiceGetAll)).WillReturnRows(rows)
 			},
 			ExpectedMetrics: ``,
 		},
@@ -64,7 +64,7 @@ func TestServicesCollector(t *testing.T) {
 					"id", "uuid", "host", "binary", "topic", "disabled", "disabled_reason",
 					"last_seen_up", "forced_down", "version", "report_count", "deleted",
 				})
-				mock.ExpectQuery(regexp.QuoteMeta(novadb.GetServices)).WillReturnRows(rows)
+				mock.ExpectQuery(regexp.QuoteMeta(novadb.ServiceGetAll)).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_nova_agent_state agent_state
 # TYPE openstack_nova_agent_state gauge
@@ -73,7 +73,7 @@ func TestServicesCollector(t *testing.T) {
 		{
 			Name: "database query error",
 			SetupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(regexp.QuoteMeta(novadb.GetServices)).WillReturnError(sql.ErrConnDone)
+				mock.ExpectQuery(regexp.QuoteMeta(novadb.ServiceGetAll)).WillReturnError(sql.ErrConnDone)
 			},
 			ExpectedMetrics: ``,
 		},

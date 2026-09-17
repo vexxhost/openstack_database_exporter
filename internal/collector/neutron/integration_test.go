@@ -87,7 +87,7 @@ openstack_neutron_up 1
 		now := time.Now().Format("2006-01-02 15:04:05")
 
 		itest.SeedSQL(t, db,
-			fmt.Sprintf(`INSERT INTO agents (id, agent_type, ` + "`binary`" + `, topic, host, admin_state_up, created_at, started_at, heartbeat_timestamp, configurations) VALUES
+			fmt.Sprintf(`INSERT INTO agents (id, agent_type, `+"`binary`"+`, topic, host, admin_state_up, created_at, started_at, heartbeat_timestamp, configurations) VALUES
 			('agent-001', 'L3 agent', 'neutron-l3-agent', 'l3_agent', 'ctrl-01', 1, '%s', '%s', '%s', '{}')`, now, now, now),
 			`INSERT INTO ha_router_agent_port_bindings (port_id, router_id, l3_agent_id, state) VALUES
 			('port-001', 'router-001', 'agent-001', 'active'),

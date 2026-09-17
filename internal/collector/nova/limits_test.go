@@ -9,14 +9,14 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/project"
-	novadb "github.com/vexxhost/openstack_database_exporter/internal/db/nova"
-	novaapidb "github.com/vexxhost/openstack_database_exporter/internal/db/nova_api"
 	"github.com/vexxhost/openstack_database_exporter/internal/testutil"
+	novaapidb "github.com/vexxhost/openstackdb/nova/db/api"
+	novadb "github.com/vexxhost/openstackdb/nova/db/main"
 )
 
 func expectGetQuotaClassDefaults(mock sqlmock.Sqlmock) {
 	rows := sqlmock.NewRows([]string{"resource", "hard_limit"})
-	mock.ExpectQuery(regexp.QuoteMeta(novaapidb.GetQuotaClassDefaults)).WillReturnRows(rows)
+	mock.ExpectQuery(regexp.QuoteMeta(novaapidb.QuotaClassGetDefaults)).WillReturnRows(rows)
 }
 
 func TestLimitsCollector(t *testing.T) {
@@ -34,7 +34,7 @@ func TestLimitsCollector(t *testing.T) {
 				).AddRow(
 					3, "project1", "ram", 51200,
 				)
-				mock.ExpectQuery(regexp.QuoteMeta(novaapidb.GetQuotas)).WillReturnRows(quotasRows)
+				mock.ExpectQuery(regexp.QuoteMeta(novaapidb.QuotaGetAll)).WillReturnRows(quotasRows)
 				expectGetQuotaClassDefaults(mock)
 
 				// Note: No placement query expected since placementDB is nil in tests
@@ -48,7 +48,7 @@ func TestLimitsCollector(t *testing.T) {
 				quotasRows := sqlmock.NewRows([]string{
 					"id", "project_id", "resource", "hard_limit",
 				})
-				mock.ExpectQuery(regexp.QuoteMeta(novaapidb.GetQuotas)).WillReturnRows(quotasRows)
+				mock.ExpectQuery(regexp.QuoteMeta(novaapidb.QuotaGetAll)).WillReturnRows(quotasRows)
 				expectGetQuotaClassDefaults(mock)
 
 				// Note: No placement query expected since placementDB is nil in tests
@@ -58,7 +58,7 @@ func TestLimitsCollector(t *testing.T) {
 		{
 			Name: "quota query error",
 			SetupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(regexp.QuoteMeta(novaapidb.GetQuotas)).WillReturnError(sql.ErrConnDone)
+				mock.ExpectQuery(regexp.QuoteMeta(novaapidb.QuotaGetAll)).WillReturnError(sql.ErrConnDone)
 			},
 			ExpectedMetrics: ``,
 		},

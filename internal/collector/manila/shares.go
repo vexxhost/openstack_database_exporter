@@ -7,8 +7,8 @@ import (
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	maniladb "github.com/vexxhost/openstack_database_exporter/internal/db/manila"
 	"github.com/vexxhost/openstack_database_exporter/internal/util"
+	maniladb "github.com/vexxhost/openstackdb/manila/db"
 )
 
 // volumeStatuses matches the upstream openstack-exporter mapVolumeStatus list exactly.
@@ -129,7 +129,7 @@ func (c *SharesCollector) Describe(ch chan<- *prometheus.Desc) {
 func (c *SharesCollector) Collect(ch chan<- prometheus.Metric) {
 	ctx := context.Background()
 
-	shares, err := c.queries.GetShareMetrics(ctx)
+	shares, err := c.queries.ShareGetAllWithInstances(ctx)
 	if err != nil {
 		c.logger.Error("Failed to collect manila shares", "error", err)
 		ch <- prometheus.MustNewConstMetric(manilaUpDesc, prometheus.GaugeValue, 0)

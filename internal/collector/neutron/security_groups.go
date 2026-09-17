@@ -6,7 +6,7 @@ import (
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	neutrondb "github.com/vexxhost/openstack_database_exporter/internal/db/neutron"
+	neutrondb "github.com/vexxhost/openstackdb/neutron/db"
 )
 
 var (

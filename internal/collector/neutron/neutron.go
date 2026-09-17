@@ -5,8 +5,8 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/project"
-	"github.com/vexxhost/openstack_database_exporter/internal/db"
 	"github.com/vexxhost/openstack_database_exporter/internal/util"
+	db "github.com/vexxhost/openstackdb"
 )
 
 const (

@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	glancedb "github.com/vexxhost/openstack_database_exporter/internal/db/glance"
 	"github.com/vexxhost/openstack_database_exporter/internal/testutil"
+	glancedb "github.com/vexxhost/openstackdb/glance/db"
 )
 
 func TestImagesCollector(t *testing.T) {
@@ -34,7 +34,7 @@ func TestImagesCollector(t *testing.T) {
 					false, nil, nil,
 				)
 
-				mock.ExpectQuery(regexp.QuoteMeta(glancedb.GetAllImages)).WillReturnRows(rows)
+				mock.ExpectQuery(regexp.QuoteMeta(glancedb.ImageGetAll)).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_glance_image_bytes image_bytes
 # TYPE openstack_glance_image_bytes gauge
@@ -62,7 +62,7 @@ openstack_glance_up 1
 					"os_hidden", "os_hash_algo", "os_hash_value",
 				})
 
-				mock.ExpectQuery(regexp.QuoteMeta(glancedb.GetAllImages)).WillReturnRows(rows)
+				mock.ExpectQuery(regexp.QuoteMeta(glancedb.ImageGetAll)).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_glance_images images
 # TYPE openstack_glance_images gauge
@@ -88,7 +88,7 @@ openstack_glance_up 1
 					false, nil, nil,
 				)
 
-				mock.ExpectQuery(regexp.QuoteMeta(glancedb.GetAllImages)).WillReturnRows(rows)
+				mock.ExpectQuery(regexp.QuoteMeta(glancedb.ImageGetAll)).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_glance_image_bytes image_bytes
 # TYPE openstack_glance_image_bytes gauge
@@ -107,7 +107,7 @@ openstack_glance_up 1
 		{
 			Name: "query error",
 			SetupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(regexp.QuoteMeta(glancedb.GetAllImages)).WillReturnError(sql.ErrConnDone)
+				mock.ExpectQuery(regexp.QuoteMeta(glancedb.ImageGetAll)).WillReturnError(sql.ErrConnDone)
 			},
 			ExpectedMetrics: `# HELP openstack_glance_up up
 # TYPE openstack_glance_up gauge

@@ -7,8 +7,8 @@ import (
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	novadb "github.com/vexxhost/openstack_database_exporter/internal/db/nova"
-	novaapidb "github.com/vexxhost/openstack_database_exporter/internal/db/nova_api"
+	novaapidb "github.com/vexxhost/openstackdb/nova/db/api"
+	novadb "github.com/vexxhost/openstackdb/nova/db/main"
 )
 
 func nullStringToString(ns sql.NullString) string {
@@ -53,7 +53,7 @@ func (c *ServicesCollector) Describe(ch chan<- *prometheus.Desc) {
 func (c *ServicesCollector) Collect(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
 
-	services, err := c.novaDB.GetServices(ctx)
+	services, err := c.novaDB.ServiceGetAll(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get services: %w", err)
 	}

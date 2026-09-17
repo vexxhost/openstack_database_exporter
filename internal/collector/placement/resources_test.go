@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	placementdb "github.com/vexxhost/openstack_database_exporter/internal/db/placement"
 	"github.com/vexxhost/openstack_database_exporter/internal/testutil"
+	placementdb "github.com/vexxhost/openstackdb/placement/objects"
 )
 
 func TestResourcesCollector(t *testing.T) {
@@ -32,7 +32,7 @@ func TestResourcesCollector(t *testing.T) {
 					"cmp-5-svr8208.localdomain", "PCPU", 96, "1.0000000000000000", 0, []uint8("0"),
 				)
 
-				mock.ExpectQuery(regexp.QuoteMeta(placementdb.GetResourceMetrics)).WillReturnRows(rows)
+				mock.ExpectQuery(regexp.QuoteMeta(placementdb.GetResourceProviderInventories)).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_placement_resource_allocation_ratio resource_allocation_ratio
 # TYPE openstack_placement_resource_allocation_ratio gauge
@@ -78,7 +78,7 @@ openstack_placement_up 1
 					"hostname", "resource_type", "total", "allocation_ratio", "reserved", "used",
 				})
 
-				mock.ExpectQuery(regexp.QuoteMeta(placementdb.GetResourceMetrics)).WillReturnRows(rows)
+				mock.ExpectQuery(regexp.QuoteMeta(placementdb.GetResourceProviderInventories)).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_placement_up up
 # TYPE openstack_placement_up gauge
@@ -94,7 +94,7 @@ openstack_placement_up 1
 					sql.NullString{Valid: false}, "VCPU", 16, "2.0", 0, []uint8("4"),
 				)
 
-				mock.ExpectQuery(regexp.QuoteMeta(placementdb.GetResourceMetrics)).WillReturnRows(rows)
+				mock.ExpectQuery(regexp.QuoteMeta(placementdb.GetResourceProviderInventories)).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_placement_resource_allocation_ratio resource_allocation_ratio
 # TYPE openstack_placement_resource_allocation_ratio gauge
@@ -116,7 +116,7 @@ openstack_placement_up 1
 		{
 			Name: "database query error",
 			SetupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(regexp.QuoteMeta(placementdb.GetResourceMetrics)).WillReturnError(sql.ErrConnDone)
+				mock.ExpectQuery(regexp.QuoteMeta(placementdb.GetResourceProviderInventories)).WillReturnError(sql.ErrConnDone)
 			},
 			ExpectedMetrics: `# HELP openstack_placement_up up
 # TYPE openstack_placement_up gauge

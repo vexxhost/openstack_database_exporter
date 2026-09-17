@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	octaviadb "github.com/vexxhost/openstack_database_exporter/internal/db/octavia"
 	"github.com/vexxhost/openstack_database_exporter/internal/testutil"
+	octaviadb "github.com/vexxhost/openstackdb/octavia/db/repositories"
 )
 
 func TestPoolCollector(t *testing.T) {
@@ -24,7 +24,7 @@ func TestPoolCollector(t *testing.T) {
 					"ERROR", "e7284bb2-f46a-42ca-8c9b-e08671255125", "ACTIVE",
 				)
 
-				mock.ExpectQuery(octaviadb.GetAllPools).WillReturnRows(rows)
+				mock.ExpectQuery(octaviadb.PoolGetAll).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_loadbalancer_pool_status pool_status
 # TYPE openstack_loadbalancer_pool_status gauge
@@ -38,7 +38,7 @@ openstack_loadbalancer_total_pools 1
 			Name: "empty results",
 			SetupMock: func(mock sqlmock.Sqlmock) {
 				rows := sqlmock.NewRows(cols)
-				mock.ExpectQuery(octaviadb.GetAllPools).WillReturnRows(rows)
+				mock.ExpectQuery(octaviadb.PoolGetAll).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_loadbalancer_total_pools total_pools
 # TYPE openstack_loadbalancer_total_pools gauge
@@ -52,7 +52,7 @@ openstack_loadbalancer_total_pools 0
 					"pool-001", nil, nil, "HTTP", "LEAST_CONNECTIONS",
 					"ONLINE", nil, "PENDING_CREATE",
 				)
-				mock.ExpectQuery(octaviadb.GetAllPools).WillReturnRows(rows)
+				mock.ExpectQuery(octaviadb.PoolGetAll).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_loadbalancer_pool_status pool_status
 # TYPE openstack_loadbalancer_pool_status gauge
@@ -72,7 +72,7 @@ openstack_loadbalancer_total_pools 1
 					AddRow("p-4", nil, nil, "TCP", "ROUND_ROBIN", "ONLINE", nil, "PENDING_UPDATE").
 					AddRow("p-5", nil, nil, "TCP", "ROUND_ROBIN", "ONLINE", nil, "PENDING_DELETE").
 					AddRow("p-6", nil, nil, "TCP", "ROUND_ROBIN", "ONLINE", nil, "UNKNOWN_PROV")
-				mock.ExpectQuery(octaviadb.GetAllPools).WillReturnRows(rows)
+				mock.ExpectQuery(octaviadb.PoolGetAll).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_loadbalancer_pool_status pool_status
 # TYPE openstack_loadbalancer_pool_status gauge
@@ -94,7 +94,7 @@ openstack_loadbalancer_total_pools 6
 					AddRow("pool-a", "proj-1", "http-pool", "HTTP", "ROUND_ROBIN", "ONLINE", "lb-1", "ACTIVE").
 					AddRow("pool-b", "proj-1", "https-pool", "HTTPS", "LEAST_CONNECTIONS", "ERROR", "lb-1", "ACTIVE").
 					AddRow("pool-c", "proj-2", "tcp-pool", "TCP", "SOURCE_IP", "OFFLINE", "lb-2", "PENDING_UPDATE")
-				mock.ExpectQuery(octaviadb.GetAllPools).WillReturnRows(rows)
+				mock.ExpectQuery(octaviadb.PoolGetAll).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_loadbalancer_pool_status pool_status
 # TYPE openstack_loadbalancer_pool_status gauge
@@ -109,7 +109,7 @@ openstack_loadbalancer_total_pools 3
 		{
 			Name: "query error",
 			SetupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(octaviadb.GetAllPools).WillReturnError(sql.ErrConnDone)
+				mock.ExpectQuery(octaviadb.PoolGetAll).WillReturnError(sql.ErrConnDone)
 			},
 			ExpectedMetrics: "",
 			ExpectError:     true,

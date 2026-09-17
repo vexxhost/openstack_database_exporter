@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	heatdb "github.com/vexxhost/openstack_database_exporter/internal/db/heat"
 	"github.com/vexxhost/openstack_database_exporter/internal/testutil"
+	heatdb "github.com/vexxhost/openstackdb/heat/db"
 )
 
 func TestStacksCollector(t *testing.T) {
@@ -25,7 +25,7 @@ func TestStacksCollector(t *testing.T) {
 					"stack-3", "failed-stack", "CREATE_FAILED", "CREATE", "tenant-1",
 				)
 
-				mock.ExpectQuery(regexp.QuoteMeta(heatdb.GetStackMetrics)).WillReturnRows(rows)
+				mock.ExpectQuery(regexp.QuoteMeta(heatdb.StackGetAll)).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_heat_stack_status_counter stack_status_counter
 # TYPE openstack_heat_stack_status_counter gauge
@@ -71,7 +71,7 @@ openstack_heat_up 1
 					"id", "name", "status", "action", "tenant",
 				})
 
-				mock.ExpectQuery(regexp.QuoteMeta(heatdb.GetStackMetrics)).WillReturnRows(rows)
+				mock.ExpectQuery(regexp.QuoteMeta(heatdb.StackGetAll)).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_heat_stack_status_counter stack_status_counter
 # TYPE openstack_heat_stack_status_counter gauge
@@ -113,7 +113,7 @@ openstack_heat_up 1
 		{
 			Name: "database query error",
 			SetupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(regexp.QuoteMeta(heatdb.GetStackMetrics)).WillReturnError(sql.ErrConnDone)
+				mock.ExpectQuery(regexp.QuoteMeta(heatdb.StackGetAll)).WillReturnError(sql.ErrConnDone)
 			},
 			ExpectedMetrics: `# HELP openstack_heat_up up
 # TYPE openstack_heat_up gauge
@@ -131,7 +131,7 @@ openstack_heat_up 0
 					"stack-2", "odd-stack", "UNKNOWN_STATUS", "CREATE", "tenant-1",
 				)
 
-				mock.ExpectQuery(regexp.QuoteMeta(heatdb.GetStackMetrics)).WillReturnRows(rows)
+				mock.ExpectQuery(regexp.QuoteMeta(heatdb.StackGetAll)).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_heat_stack_status_counter stack_status_counter
 # TYPE openstack_heat_stack_status_counter gauge

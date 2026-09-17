@@ -7,7 +7,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/project"
-	cinderdb "github.com/vexxhost/openstack_database_exporter/internal/db/cinder"
+	cinderdb "github.com/vexxhost/openstackdb/cinder/db"
 )
 
 const (
@@ -109,21 +109,21 @@ func (c *LimitsCollector) Collect(ch chan<- prometheus.Metric) {
 	ctx := context.Background()
 
 	// Get quota limits (hard_limit) from quotas table
-	quotaLimits, err := c.queries.GetProjectQuotaLimits(ctx)
+	quotaLimits, err := c.queries.QuotaGetProjectLimits(ctx)
 	if err != nil {
 		c.logger.Error("failed to query quota limits", "error", err)
 		return
 	}
 
 	// Get quota usages (in_use) from quota_usages table
-	quotaUsages, err := c.queries.GetProjectQuotaUsages(ctx)
+	quotaUsages, err := c.queries.QuotaUsageGetAll(ctx)
 	if err != nil {
 		c.logger.Error("failed to query quota usages", "error", err)
 		return
 	}
 
 	// Get volume types for volume_type_quota_gigabytes
-	volumeTypes, err := c.queries.GetVolumeTypes(ctx)
+	volumeTypes, err := c.queries.VolumeTypeGetAll(ctx)
 	if err != nil {
 		c.logger.Error("failed to query volume types", "error", err)
 		return

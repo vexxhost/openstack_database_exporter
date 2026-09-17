@@ -6,7 +6,7 @@ import (
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	placementdb "github.com/vexxhost/openstack_database_exporter/internal/db/placement"
+	placementdb "github.com/vexxhost/openstackdb/placement/objects"
 )
 
 var (
@@ -87,7 +87,7 @@ func (c *ResourcesCollector) Describe(ch chan<- *prometheus.Desc) {
 func (c *ResourcesCollector) Collect(ch chan<- prometheus.Metric) {
 	ctx := context.Background()
 
-	resources, err := c.queries.GetResourceMetrics(ctx)
+	resources, err := c.queries.GetResourceProviderInventories(ctx)
 	if err != nil {
 		c.logger.Error("Failed to collect placement resources", "error", err)
 		ch <- prometheus.MustNewConstMetric(placementUpDesc, prometheus.GaugeValue, 0)

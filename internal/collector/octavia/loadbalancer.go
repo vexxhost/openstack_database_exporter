@@ -6,8 +6,8 @@ import (
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	octaviadb "github.com/vexxhost/openstack_database_exporter/internal/db/octavia"
 	"github.com/vexxhost/openstack_database_exporter/internal/util"
+	octaviadb "github.com/vexxhost/openstackdb/octavia/db/repositories"
 )
 
 var (
@@ -43,14 +43,14 @@ var (
 
 type LoadBalancerCollector struct {
 	db      *sql.DB
-	queries *octaviadb.Queries
+	queries *octaviadb.LoadBalancerRepository
 	logger  *slog.Logger
 }
 
 func NewLoadBalancerCollector(db *sql.DB, logger *slog.Logger) *LoadBalancerCollector {
 	return &LoadBalancerCollector{
 		db:      db,
-		queries: octaviadb.New(db),
+		queries: octaviadb.NewLoadBalancerRepository(db),
 		logger: logger.With(
 			"namespace", Namespace,
 			"subsystem", Subsystem,
@@ -68,7 +68,7 @@ func (c *LoadBalancerCollector) Describe(ch chan<- *prometheus.Desc) {
 func (c *LoadBalancerCollector) Collect(ch chan<- prometheus.Metric) {
 	ctx := context.Background()
 
-	loadBalancers, err := c.queries.GetAllLoadBalancersWithVip(ctx)
+	loadBalancers, err := c.queries.GetAllWithVIP(ctx)
 	if err != nil {
 		ch <- prometheus.MustNewConstMetric(upDesc, prometheus.GaugeValue, 0)
 

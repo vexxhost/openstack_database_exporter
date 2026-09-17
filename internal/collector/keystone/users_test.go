@@ -8,8 +8,8 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/prometheus/client_golang/prometheus"
-	keystonedb "github.com/vexxhost/openstack_database_exporter/internal/db/keystone"
 	"github.com/vexxhost/openstack_database_exporter/internal/testutil"
+	keystonedb "github.com/vexxhost/openstackdb/keystone/db"
 )
 
 func TestUsersCollector(t *testing.T) {
@@ -25,7 +25,7 @@ func TestUsersCollector(t *testing.T) {
 				).AddRow(
 					"user-2", 1, "default", "", nil, nil,
 				)
-				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetUserMetrics)).WillReturnRows(userRows)
+				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.ListUsers)).WillReturnRows(userRows)
 			},
 			ExpectedMetrics: `# HELP openstack_identity_users users
 # TYPE openstack_identity_users gauge
@@ -39,7 +39,7 @@ openstack_identity_users 2
 				userRows := sqlmock.NewRows([]string{
 					"id", "enabled", "domain_id", "default_project_id", "created_at", "last_active_at",
 				})
-				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetUserMetrics)).WillReturnRows(userRows)
+				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.ListUsers)).WillReturnRows(userRows)
 			},
 			ExpectedMetrics: `# HELP openstack_identity_users users
 # TYPE openstack_identity_users gauge
@@ -49,7 +49,7 @@ openstack_identity_users 0
 		{
 			Name: "database error on user query",
 			SetupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetUserMetrics)).WillReturnError(sql.ErrConnDone)
+				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.ListUsers)).WillReturnError(sql.ErrConnDone)
 			},
 			ExpectedMetrics: ``,
 		},
