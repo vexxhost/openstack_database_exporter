@@ -158,8 +158,8 @@ github.com/tklauser/go-sysconf v0.3.12 h1:0QaGUFOdQaIVdPgfITYzaTegZvdCjmYO52cSFA
 github.com/tklauser/go-sysconf v0.3.12/go.mod h1:Ho14jnntGE1fpdOqQEEaiKRpvIavV0hSfmBq8nJbHYI=
 github.com/tklauser/numcpus v0.6.1 h1:ng9scYS7az0Bk4OZLvrNXNSAO2Pxr1XXRAPyjhIx+Fk=
 github.com/tklauser/numcpus v0.6.1/go.mod h1:1XfjsgE2zo8GVw7POkMbHENHzVg3GzmoZ9fESEdAacY=
-github.com/vexxhost/openstackdb v0.2.1-0.20260917182453-bd2ce11017bd h1:KxMHB2QNOsIEsAylTxlHuQWFgUKbU1+4dHpnZvwrc3o=
-github.com/vexxhost/openstackdb v0.2.1-0.20260917182453-bd2ce11017bd/go.mod h1:pyeNaJXXGVH9biXEeJyDvA1u6ARgH+ThPbqT0tNzR9c=
+github.com/vexxhost/openstackdb v0.2.1 h1:HHHQ/Z7d3q6a0rSxQRl/8qfQbuKCFrLFMvkO7TnL33Y=
+github.com/vexxhost/openstackdb v0.2.1/go.mod h1:pyeNaJXXGVH9biXEeJyDvA1u6ARgH+ThPbqT0tNzR9c=
 github.com/xhit/go-str2duration/v2 v2.1.0 h1:lxklc02Drh6ynqX+DdPyp5pCKLUQpRT8bp8Ydu2Bstc=
 github.com/xhit/go-str2duration/v2 v2.1.0/go.mod h1:ohY8p+0f07DiV6Em5LKB0s2YpLtXVyJfNt1+BlmyAsU=
 github.com/yusufpapurcu/wmi v1.2.4 h1:zFUKzehAFReQwLys1b/iSMl+JQGSCSjtVqQn9bBrPo0=
