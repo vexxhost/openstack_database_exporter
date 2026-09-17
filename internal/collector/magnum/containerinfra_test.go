@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	magnumdb "github.com/vexxhost/openstack_database_exporter/internal/db/magnum"
 	"github.com/vexxhost/openstack_database_exporter/internal/testutil"
+	magnumdb "github.com/vexxhost/openstackdb/magnum/db"
 )
 
 func TestContainerInfraCollector(t *testing.T) {
@@ -23,7 +23,7 @@ func TestContainerInfraCollector(t *testing.T) {
 				)
 
 				// Only ONE query expected (no triple-query)
-				mock.ExpectQuery(regexp.QuoteMeta(magnumdb.GetClusterMetrics)).WillReturnRows(rows)
+				mock.ExpectQuery(regexp.QuoteMeta(magnumdb.GetClusterList)).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_container_infra_cluster_masters cluster_masters
 # TYPE openstack_container_infra_cluster_masters gauge
@@ -53,7 +53,7 @@ openstack_container_infra_up 1
 					"cluster-2", "test-cluster-2", "stack-2", "UPDATE_IN_PROGRESS", "project-2", int64(1), int64(2),
 				)
 
-				mock.ExpectQuery(regexp.QuoteMeta(magnumdb.GetClusterMetrics)).WillReturnRows(rows)
+				mock.ExpectQuery(regexp.QuoteMeta(magnumdb.GetClusterList)).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_container_infra_cluster_masters cluster_masters
 # TYPE openstack_container_infra_cluster_masters gauge
@@ -82,7 +82,7 @@ openstack_container_infra_up 1
 					"uuid", "name", "stack_id", "status", "project_id", "master_count", "node_count",
 				})
 
-				mock.ExpectQuery(regexp.QuoteMeta(magnumdb.GetClusterMetrics)).WillReturnRows(rows)
+				mock.ExpectQuery(regexp.QuoteMeta(magnumdb.GetClusterList)).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_container_infra_total_clusters total_clusters
 # TYPE openstack_container_infra_total_clusters gauge
@@ -95,7 +95,7 @@ openstack_container_infra_up 1
 		{
 			Name: "database query error",
 			SetupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(regexp.QuoteMeta(magnumdb.GetClusterMetrics)).WillReturnError(sql.ErrConnDone)
+				mock.ExpectQuery(regexp.QuoteMeta(magnumdb.GetClusterList)).WillReturnError(sql.ErrConnDone)
 			},
 			ExpectedMetrics: `# HELP openstack_container_infra_up up
 # TYPE openstack_container_infra_up gauge

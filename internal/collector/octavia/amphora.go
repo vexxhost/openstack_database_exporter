@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	octaviadb "github.com/vexxhost/openstack_database_exporter/internal/db/octavia"
 	"github.com/vexxhost/openstack_database_exporter/internal/util"
+	octaviadb "github.com/vexxhost/openstackdb/octavia/db/repositories"
 )
 
 var (
@@ -38,14 +38,14 @@ var (
 
 type AmphoraCollector struct {
 	db      *sql.DB
-	queries *octaviadb.Queries
+	queries *octaviadb.AmphoraRepository
 	logger  *slog.Logger
 }
 
 func NewAmphoraCollector(db *sql.DB, logger *slog.Logger) *AmphoraCollector {
 	return &AmphoraCollector{
 		db:      db,
-		queries: octaviadb.New(db),
+		queries: octaviadb.NewAmphoraRepository(db),
 		logger: logger.With(
 			"namespace", Namespace,
 			"subsystem", Subsystem,
@@ -62,7 +62,7 @@ func (c *AmphoraCollector) Describe(ch chan<- *prometheus.Desc) {
 func (c *AmphoraCollector) Collect(ch chan<- prometheus.Metric) {
 	ctx := context.Background()
 
-	amphorae, err := c.queries.GetAllAmphora(ctx)
+	amphorae, err := c.queries.GetAll(ctx)
 	if err != nil {
 		c.logger.Error("failed to query", "error", err)
 		return

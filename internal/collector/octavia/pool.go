@@ -6,8 +6,8 @@ import (
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	octaviadb "github.com/vexxhost/openstack_database_exporter/internal/db/octavia"
 	"github.com/vexxhost/openstack_database_exporter/internal/util"
+	octaviadb "github.com/vexxhost/openstackdb/octavia/db/repositories"
 )
 
 var (
@@ -37,14 +37,14 @@ var (
 
 type PoolCollector struct {
 	db      *sql.DB
-	queries *octaviadb.Queries
+	queries *octaviadb.PoolRepository
 	logger  *slog.Logger
 }
 
 func NewPoolCollector(db *sql.DB, logger *slog.Logger) *PoolCollector {
 	return &PoolCollector{
 		db:      db,
-		queries: octaviadb.New(db),
+		queries: octaviadb.NewPoolRepository(db),
 		logger: logger.With(
 			"namespace", Namespace,
 			"subsystem", Subsystem,
@@ -61,7 +61,7 @@ func (c *PoolCollector) Describe(ch chan<- *prometheus.Desc) {
 func (c *PoolCollector) Collect(ch chan<- prometheus.Metric) {
 	ctx := context.Background()
 
-	pools, err := c.queries.GetAllPools(ctx)
+	pools, err := c.queries.GetAll(ctx)
 	if err != nil {
 		c.logger.Error("failed to query", "error", err)
 		return

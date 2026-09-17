@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/vexxhost/openstack_database_exporter/internal/db/nova"
-	"github.com/vexxhost/openstack_database_exporter/internal/db/nova_api"
+	"github.com/vexxhost/openstackdb/nova/db/api"
+	"github.com/vexxhost/openstackdb/nova/db/main"
 )
 
 var (
@@ -61,32 +61,32 @@ var (
 	taskStateOverrides = map[string]map[string]string{
 		"active": {
 			"shelving":                      "SHELVED",
-			"shelving_image_pending_upload":  "SHELVED",
-			"shelving_image_uploading":       "SHELVED",
-			"shelving_offloading":            "SHELVED",
-			"rebuilding":                     "REBUILD",
-			"rebuild_block_device_mapping":   "REBUILD",
-			"rebuild_spawning":               "REBUILD",
-			"migrating":                      "MIGRATING",
-			"resize_prep":                    "RESIZE",
-			"resize_migrating":               "RESIZE",
-			"resize_migrated":                "RESIZE",
-			"resize_finish":                  "RESIZE",
+			"shelving_image_pending_upload": "SHELVED",
+			"shelving_image_uploading":      "SHELVED",
+			"shelving_offloading":           "SHELVED",
+			"rebuilding":                    "REBUILD",
+			"rebuild_block_device_mapping":  "REBUILD",
+			"rebuild_spawning":              "REBUILD",
+			"migrating":                     "MIGRATING",
+			"resize_prep":                   "RESIZE",
+			"resize_migrating":              "RESIZE",
+			"resize_migrated":               "RESIZE",
+			"resize_finish":                 "RESIZE",
 		},
 		"stopped": {
-			"resize_prep":                    "RESIZE",
-			"resize_migrating":               "RESIZE",
-			"resize_migrated":                "RESIZE",
-			"resize_finish":                  "RESIZE",
-			"rebuilding":                     "REBUILD",
-			"rebuild_block_device_mapping":   "REBUILD",
-			"rebuild_spawning":               "REBUILD",
+			"resize_prep":                  "RESIZE",
+			"resize_migrating":             "RESIZE",
+			"resize_migrated":              "RESIZE",
+			"resize_finish":                "RESIZE",
+			"rebuilding":                   "REBUILD",
+			"rebuild_block_device_mapping": "REBUILD",
+			"rebuild_spawning":             "REBUILD",
 		},
 		"resized": {
-			"resize_reverting":               "REVERT_RESIZE",
+			"resize_reverting": "REVERT_RESIZE",
 		},
 		"paused": {
-			"migrating":                      "MIGRATING",
+			"migrating": "MIGRATING",
 		},
 	}
 )
@@ -95,12 +95,12 @@ var (
 type ServerCollector struct {
 	logger        *slog.Logger
 	novaDB        *nova.Queries
-	novaAPIDB     *nova_api.Queries
+	novaAPIDB     *novaapi.Queries
 	serverMetrics map[string]*prometheus.Desc
 }
 
 // NewServerCollector creates a new server collector
-func NewServerCollector(logger *slog.Logger, novaDB *nova.Queries, novaAPIDB *nova_api.Queries) *ServerCollector {
+func NewServerCollector(logger *slog.Logger, novaDB *nova.Queries, novaAPIDB *novaapi.Queries) *ServerCollector {
 	return &ServerCollector{
 		logger: logger.With(
 			"namespace", Namespace,
@@ -153,13 +153,13 @@ func (c *ServerCollector) Collect(ch chan<- prometheus.Metric) error {
 func (c *ServerCollector) collectServerMetrics(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
 
-	instances, err := c.novaDB.GetInstances(ctx)
+	instances, err := c.novaDB.InstanceGetAll(ctx)
 	if err != nil {
 		return err
 	}
 
 	// Build flavor map: integer ID -> flavorid UUID
-	flavors, err := c.novaAPIDB.GetFlavors(ctx)
+	flavors, err := c.novaAPIDB.FlavorGetAll(ctx)
 	if err != nil {
 		return err
 	}

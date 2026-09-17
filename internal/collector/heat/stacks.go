@@ -6,7 +6,7 @@ import (
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	heatdb "github.com/vexxhost/openstack_database_exporter/internal/db/heat"
+	heatdb "github.com/vexxhost/openstackdb/heat/db"
 )
 
 var (
@@ -85,7 +85,7 @@ func (c *StacksCollector) Describe(ch chan<- *prometheus.Desc) {
 func (c *StacksCollector) Collect(ch chan<- prometheus.Metric) {
 	ctx := context.Background()
 
-	stacks, err := c.queries.GetStackMetrics(ctx)
+	stacks, err := c.queries.StackGetAll(ctx)
 	if err != nil {
 		ch <- prometheus.MustNewConstMetric(stacksUpDesc, prometheus.GaugeValue, 0)
 		c.logger.Error("failed to query stacks", "error", err)

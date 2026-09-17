@@ -7,7 +7,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/project"
-	neutrondb "github.com/vexxhost/openstack_database_exporter/internal/db/neutron"
+	neutrondb "github.com/vexxhost/openstackdb/neutron/db"
 )
 
 // Neutron default quota values per resource type.

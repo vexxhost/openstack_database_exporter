@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	cinderdb "github.com/vexxhost/openstack_database_exporter/internal/db/cinder"
 	"github.com/vexxhost/openstack_database_exporter/internal/testutil"
+	cinderdb "github.com/vexxhost/openstackdb/cinder/db"
 )
 
 func TestAgentsCollector(t *testing.T) {
@@ -30,7 +30,7 @@ func TestAgentsCollector(t *testing.T) {
 					"3649e0f6-de80-ab6e-4f1c-351042d2f7fe", "devstack", "cinder-backup", "enabled",
 					"nova", "Test2", 1,
 				)
-				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.GetAllServices)).WillReturnRows(rows)
+				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.ServiceGetAll)).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_cinder_agent_state agent_state
 # TYPE openstack_cinder_agent_state gauge
@@ -43,7 +43,7 @@ openstack_cinder_agent_state{adminState="enabled",disabledReason="Test2",hostnam
 			Name: "empty results",
 			SetupMock: func(mock sqlmock.Sqlmock) {
 				rows := sqlmock.NewRows(cols)
-				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.GetAllServices)).WillReturnRows(rows)
+				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.ServiceGetAll)).WillReturnRows(rows)
 			},
 			ExpectedMetrics: "",
 		},
@@ -54,7 +54,7 @@ openstack_cinder_agent_state{adminState="enabled",disabledReason="Test2",hostnam
 					"aaaa-bbbb", "host-1", "cinder-volume", "disabled",
 					"az-1", "maintenance window", 0,
 				)
-				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.GetAllServices)).WillReturnRows(rows)
+				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.ServiceGetAll)).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_cinder_agent_state agent_state
 # TYPE openstack_cinder_agent_state gauge
@@ -68,7 +68,7 @@ openstack_cinder_agent_state{adminState="disabled",disabledReason="maintenance w
 					nil, nil, nil, "enabled",
 					nil, nil, 1,
 				)
-				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.GetAllServices)).WillReturnRows(rows)
+				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.ServiceGetAll)).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_cinder_agent_state agent_state
 # TYPE openstack_cinder_agent_state gauge
@@ -82,7 +82,7 @@ openstack_cinder_agent_state{adminState="enabled",disabledReason="",hostname="",
 					AddRow("uuid-1", "host-a", "cinder-volume", "enabled", "nova", nil, 1).
 					AddRow("uuid-2", "host-b", "cinder-scheduler", "disabled", "nova", "decommissioned", 0).
 					AddRow("uuid-3", "host-c", "cinder-backup", "enabled", "az-2", nil, 0)
-				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.GetAllServices)).WillReturnRows(rows)
+				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.ServiceGetAll)).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_cinder_agent_state agent_state
 # TYPE openstack_cinder_agent_state gauge
@@ -94,7 +94,7 @@ openstack_cinder_agent_state{adminState="enabled",disabledReason="",hostname="ho
 		{
 			Name: "query error",
 			SetupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.GetAllServices)).WillReturnError(sql.ErrConnDone)
+				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.ServiceGetAll)).WillReturnError(sql.ErrConnDone)
 			},
 			ExpectedMetrics: "",
 			ExpectError:     true,

@@ -6,7 +6,7 @@ import (
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	keystonedb "github.com/vexxhost/openstack_database_exporter/internal/db/keystone"
+	keystonedb "github.com/vexxhost/openstackdb/keystone/db"
 )
 
 var (
@@ -43,7 +43,7 @@ func (c *UsersCollector) Describe(ch chan<- *prometheus.Desc) {
 func (c *UsersCollector) Collect(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
 
-	users, err := c.queries.GetUserMetrics(ctx)
+	users, err := c.queries.ListUsers(ctx)
 	if err != nil {
 		c.logger.Error("Failed to query users", "error", err)
 		return err

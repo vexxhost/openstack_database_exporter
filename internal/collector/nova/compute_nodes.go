@@ -6,20 +6,20 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/vexxhost/openstack_database_exporter/internal/db/nova"
-	"github.com/vexxhost/openstack_database_exporter/internal/db/nova_api"
+	"github.com/vexxhost/openstackdb/nova/db/api"
+	"github.com/vexxhost/openstackdb/nova/db/main"
 )
 
 // ComputeNodesCollector collects metrics about Nova compute nodes
 type ComputeNodesCollector struct {
 	logger             *slog.Logger
 	novaDB             *nova.Queries
-	novaAPIDB          *nova_api.Queries
+	novaAPIDB          *novaapi.Queries
 	computeNodeMetrics map[string]*prometheus.Desc
 }
 
 // NewComputeNodesCollector creates a new compute nodes collector
-func NewComputeNodesCollector(logger *slog.Logger, novaDB *nova.Queries, novaAPIDB *nova_api.Queries) *ComputeNodesCollector {
+func NewComputeNodesCollector(logger *slog.Logger, novaDB *nova.Queries, novaAPIDB *novaapi.Queries) *ComputeNodesCollector {
 	return &ComputeNodesCollector{
 		logger: logger.With(
 			"namespace", Namespace,
@@ -100,13 +100,13 @@ func (c *ComputeNodesCollector) Collect(ch chan<- prometheus.Metric) error {
 }
 
 func (c *ComputeNodesCollector) collectComputeNodeMetrics(ch chan<- prometheus.Metric) error {
-	computeNodes, err := c.novaDB.GetComputeNodes(context.Background())
+	computeNodes, err := c.novaDB.ComputeNodeGetAll(context.Background())
 	if err != nil {
 		return err
 	}
 
 	// Get aggregates info for compute nodes
-	aggregates, err := c.novaAPIDB.GetAggregateHosts(context.Background())
+	aggregates, err := c.novaAPIDB.AggregateHostGetAll(context.Background())
 	if err != nil {
 		c.logger.Error("Failed to get aggregate hosts", "error", err)
 	}

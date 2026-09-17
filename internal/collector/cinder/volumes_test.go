@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	cinderdb "github.com/vexxhost/openstack_database_exporter/internal/db/cinder"
 	"github.com/vexxhost/openstack_database_exporter/internal/testutil"
+	cinderdb "github.com/vexxhost/openstackdb/cinder/db"
 )
 
 func TestVolumesCollector(t *testing.T) {
@@ -25,7 +25,7 @@ func TestVolumesCollector(t *testing.T) {
 					"6edbc2f4-1507-44f8-ac0d-eed1d2608d38", "test-volume-attachments", 2, "in-use", "nova",
 					false, "bab7d5c60cd041a0a36f7c4b6e1dd978", "32779452fcd34ae1a53a797ac8a1e064", "lvmdriver-1", "f4fda93b-06e0-4743-8117-bc8bcecd651b",
 				)
-				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.GetAllVolumes)).WillReturnRows(rows)
+				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.VolumeGetAllWithAttachments)).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_cinder_up up
 # TYPE openstack_cinder_up gauge
@@ -68,7 +68,7 @@ openstack_cinder_volumes 2
 		{
 			Name: "query error",
 			SetupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.GetAllVolumes)).WillReturnError(sql.ErrConnDone)
+				mock.ExpectQuery(regexp.QuoteMeta(cinderdb.VolumeGetAllWithAttachments)).WillReturnError(sql.ErrConnDone)
 			},
 			ExpectedMetrics: "",
 			ExpectError:     false,

@@ -6,9 +6,9 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/project"
-	"github.com/vexxhost/openstack_database_exporter/internal/db/nova"
-	"github.com/vexxhost/openstack_database_exporter/internal/db/nova_api"
-	"github.com/vexxhost/openstack_database_exporter/internal/db/placement"
+	"github.com/vexxhost/openstackdb/nova/db/api"
+	"github.com/vexxhost/openstackdb/nova/db/main"
+	"github.com/vexxhost/openstackdb/placement/objects"
 )
 
 // LimitsCollector collects Nova limits metrics using placement as the
@@ -17,14 +17,14 @@ import (
 type LimitsCollector struct {
 	logger          *slog.Logger
 	novaDB          *nova.Queries
-	novaAPIDB       *nova_api.Queries
+	novaAPIDB       *novaapi.Queries
 	placementDB     *placement.Queries
 	projectResolver *project.Resolver
 	limitsMetrics   map[string]*prometheus.Desc
 }
 
 // NewLimitsCollector creates a new limits collector
-func NewLimitsCollector(logger *slog.Logger, novaDB *nova.Queries, novaAPIDB *nova_api.Queries, placementDB *placement.Queries, projectResolver *project.Resolver) *LimitsCollector {
+func NewLimitsCollector(logger *slog.Logger, novaDB *nova.Queries, novaAPIDB *novaapi.Queries, placementDB *placement.Queries, projectResolver *project.Resolver) *LimitsCollector {
 	return &LimitsCollector{
 		logger: logger.With(
 			"namespace", Namespace,
@@ -92,14 +92,14 @@ func (c *LimitsCollector) collectLimitsMetrics(ch chan<- prometheus.Metric) erro
 	ctx := context.Background()
 
 	// Get quotas (limits) from Nova API DB
-	quotas, err := c.novaAPIDB.GetQuotas(ctx)
+	quotas, err := c.novaAPIDB.QuotaGetAll(ctx)
 	if err != nil {
 		return err
 	}
 
 	// Get default quota class overrides from DB (class_name = 'default')
 	dbDefaults := make(map[string]float64)
-	quotaClassDefaults, err := c.novaAPIDB.GetQuotaClassDefaults(ctx)
+	quotaClassDefaults, err := c.novaAPIDB.QuotaClassGetDefaults(ctx)
 	if err != nil {
 		c.logger.Error("Failed to get quota class defaults", "error", err)
 	} else {

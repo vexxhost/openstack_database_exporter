@@ -7,8 +7,8 @@ import (
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/vexxhost/openstack_database_exporter/internal/db/nova"
-	"github.com/vexxhost/openstack_database_exporter/internal/db/nova_api"
+	"github.com/vexxhost/openstackdb/nova/db/api"
+	"github.com/vexxhost/openstackdb/nova/db/main"
 )
 
 func nullInt32ToString(ni sql.NullInt32) string {
@@ -22,12 +22,12 @@ func nullInt32ToString(ni sql.NullInt32) string {
 type FlavorsCollector struct {
 	logger        *slog.Logger
 	novaDB        *nova.Queries
-	novaAPIDB     *nova_api.Queries
+	novaAPIDB     *novaapi.Queries
 	flavorMetrics map[string]*prometheus.Desc
 }
 
 // NewFlavorsCollector creates a new flavors collector
-func NewFlavorsCollector(logger *slog.Logger, novaDB *nova.Queries, novaAPIDB *nova_api.Queries) *FlavorsCollector {
+func NewFlavorsCollector(logger *slog.Logger, novaDB *nova.Queries, novaAPIDB *novaapi.Queries) *FlavorsCollector {
 	return &FlavorsCollector{
 		logger: logger.With(
 			"namespace", Namespace,
@@ -74,7 +74,7 @@ func (c *FlavorsCollector) Collect(ch chan<- prometheus.Metric) error {
 func (c *FlavorsCollector) collectFlavorMetrics(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
 
-	flavors, err := c.novaAPIDB.GetFlavors(ctx)
+	flavors, err := c.novaAPIDB.FlavorGetAll(ctx)
 	if err != nil {
 		return err
 	}

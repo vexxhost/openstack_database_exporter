@@ -6,7 +6,7 @@ import (
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	keystonedb "github.com/vexxhost/openstack_database_exporter/internal/db/keystone"
+	keystonedb "github.com/vexxhost/openstackdb/keystone/db"
 )
 
 var (
@@ -43,7 +43,7 @@ func (c *GroupsCollector) Describe(ch chan<- *prometheus.Desc) {
 func (c *GroupsCollector) Collect(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
 
-	groups, err := c.queries.GetGroupMetrics(ctx)
+	groups, err := c.queries.ListGroups(ctx)
 	if err != nil {
 		c.logger.Error("Failed to query groups", "error", err)
 		return err

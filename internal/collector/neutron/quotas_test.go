@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/project"
-	neutrondb "github.com/vexxhost/openstack_database_exporter/internal/db/neutron"
+	neutrondb "github.com/vexxhost/openstackdb/neutron/db"
 )
 
 func TestQuotaCollector(t *testing.T) {

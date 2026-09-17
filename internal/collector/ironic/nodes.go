@@ -5,7 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	ironicdb "github.com/vexxhost/openstack_database_exporter/internal/db/ironic"
+	ironicdb "github.com/vexxhost/openstackdb/ironic/db"
 )
 
 const maxLabelLength = 128
@@ -51,7 +51,7 @@ func (c *NodesCollector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 // CollectFromRows emits node metrics from pre-fetched rows.
-func (c *NodesCollector) CollectFromRows(ch chan<- prometheus.Metric, nodes []ironicdb.GetNodeMetricsRow) {
+func (c *NodesCollector) CollectFromRows(ch chan<- prometheus.Metric, nodes []ironicdb.GetNodeListRow) {
 	for _, node := range nodes {
 		// Skip nodes with empty UUID to avoid duplicate label sets
 		if !node.Uuid.Valid || node.Uuid.String == "" {

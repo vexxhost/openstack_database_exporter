@@ -6,23 +6,23 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/project"
-	"github.com/vexxhost/openstack_database_exporter/internal/db/nova"
-	"github.com/vexxhost/openstack_database_exporter/internal/db/nova_api"
-	"github.com/vexxhost/openstack_database_exporter/internal/db/placement"
+	"github.com/vexxhost/openstackdb/nova/db/api"
+	"github.com/vexxhost/openstackdb/nova/db/main"
+	"github.com/vexxhost/openstackdb/placement/objects"
 )
 
 // QuotasCollector collects metrics about Nova quotas
 type QuotasCollector struct {
 	logger          *slog.Logger
 	novaDB          *nova.Queries
-	novaAPIDB       *nova_api.Queries
+	novaAPIDB       *novaapi.Queries
 	placementDB     *placement.Queries
 	projectResolver *project.Resolver
 	quotaMetrics    map[string]*prometheus.Desc
 }
 
 // NewQuotasCollector creates a new quotas collector
-func NewQuotasCollector(logger *slog.Logger, novaDB *nova.Queries, novaAPIDB *nova_api.Queries, placementDB *placement.Queries, projectResolver *project.Resolver) *QuotasCollector {
+func NewQuotasCollector(logger *slog.Logger, novaDB *nova.Queries, novaAPIDB *novaapi.Queries, placementDB *placement.Queries, projectResolver *project.Resolver) *QuotasCollector {
 	return &QuotasCollector{
 		logger: logger.With(
 			"namespace", Namespace,
@@ -138,7 +138,7 @@ func (c *QuotasCollector) collectQuotaMetrics(ch chan<- prometheus.Metric) error
 	ctx := context.Background()
 
 	// Get quotas (hard limits)
-	quotas, err := c.novaAPIDB.GetQuotas(ctx)
+	quotas, err := c.novaAPIDB.QuotaGetAll(ctx)
 	if err != nil {
 		return err
 	}
@@ -196,7 +196,7 @@ func (c *QuotasCollector) collectQuotaMetrics(ch chan<- prometheus.Metric) error
 
 	// Get default quota class overrides from DB (class_name = 'default')
 	dbDefaults := make(map[string]float64)
-	quotaClassDefaults, err := c.novaAPIDB.GetQuotaClassDefaults(ctx)
+	quotaClassDefaults, err := c.novaAPIDB.QuotaClassGetDefaults(ctx)
 	if err != nil {
 		c.logger.Error("Failed to get quota class defaults", "error", err)
 	} else {

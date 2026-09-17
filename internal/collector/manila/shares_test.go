@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	maniladb "github.com/vexxhost/openstack_database_exporter/internal/db/manila"
 	"github.com/vexxhost/openstack_database_exporter/internal/testutil"
+	maniladb "github.com/vexxhost/openstackdb/manila/db"
 )
 
 func TestSharesCollector(t *testing.T) {
@@ -22,7 +22,7 @@ func TestSharesCollector(t *testing.T) {
 					"4be93e2e-ffff-ffff-ffff-603e3ec2a5d6", "share-test", "ffff8fa0ca1a468db8ad00970c1effff", 1, "NFS", "available", "az1", "", "az1",
 				)
 
-				mock.ExpectQuery(regexp.QuoteMeta(maniladb.GetShareMetrics)).WillReturnRows(rows)
+				mock.ExpectQuery(regexp.QuoteMeta(maniladb.ShareGetAllWithInstances)).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_sharev2_share_gb share_gb
 # TYPE openstack_sharev2_share_gb gauge
@@ -72,7 +72,7 @@ openstack_sharev2_up 1
 					"share-3", "test-share-3", "project-1", 5, "NFS", "error", "type-uuid-1", "default", "nova",
 				)
 
-				mock.ExpectQuery(regexp.QuoteMeta(maniladb.GetShareMetrics)).WillReturnRows(rows)
+				mock.ExpectQuery(regexp.QuoteMeta(maniladb.ShareGetAllWithInstances)).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_sharev2_share_gb share_gb
 # TYPE openstack_sharev2_share_gb gauge
@@ -120,7 +120,7 @@ openstack_sharev2_up 1
 					"id", "name", "project_id", "size", "share_proto", "status", "share_type", "share_type_name", "availability_zone",
 				})
 
-				mock.ExpectQuery(regexp.QuoteMeta(maniladb.GetShareMetrics)).WillReturnRows(rows)
+				mock.ExpectQuery(regexp.QuoteMeta(maniladb.ShareGetAllWithInstances)).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_sharev2_share_status_counter share_status_counter
 # TYPE openstack_sharev2_share_status_counter gauge
@@ -160,7 +160,7 @@ openstack_sharev2_up 1
 					"share-null", sql.NullString{Valid: false}, sql.NullString{Valid: false}, sql.NullInt32{Valid: false}, sql.NullString{Valid: false}, sql.NullString{Valid: false}, "", "", "",
 				)
 
-				mock.ExpectQuery(regexp.QuoteMeta(maniladb.GetShareMetrics)).WillReturnRows(rows)
+				mock.ExpectQuery(regexp.QuoteMeta(maniladb.ShareGetAllWithInstances)).WillReturnRows(rows)
 			},
 			ExpectedMetrics: `# HELP openstack_sharev2_share_gb share_gb
 # TYPE openstack_sharev2_share_gb gauge
@@ -200,7 +200,7 @@ openstack_sharev2_up 1
 		{
 			Name: "database query error",
 			SetupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(regexp.QuoteMeta(maniladb.GetShareMetrics)).WillReturnError(sql.ErrConnDone)
+				mock.ExpectQuery(regexp.QuoteMeta(maniladb.ShareGetAllWithInstances)).WillReturnError(sql.ErrConnDone)
 			},
 			ExpectedMetrics: `# HELP openstack_sharev2_up up
 # TYPE openstack_sharev2_up gauge

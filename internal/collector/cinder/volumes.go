@@ -7,8 +7,8 @@ import (
 	"strconv"
 
 	"github.com/prometheus/client_golang/prometheus"
-	cinderdb "github.com/vexxhost/openstack_database_exporter/internal/db/cinder"
 	"github.com/vexxhost/openstack_database_exporter/internal/util"
+	cinderdb "github.com/vexxhost/openstackdb/cinder/db"
 )
 
 var (
@@ -98,7 +98,7 @@ func (c *VolumesCollector) Describe(ch chan<- *prometheus.Desc) {
 func (c *VolumesCollector) Collect(ch chan<- prometheus.Metric) {
 	ctx := context.Background()
 
-	volumes, err := c.queries.GetAllVolumes(ctx)
+	volumes, err := c.queries.VolumeGetAllWithAttachments(ctx)
 	if err != nil {
 		ch <- prometheus.MustNewConstMetric(volumesUpDesc, prometheus.GaugeValue, 0)
 

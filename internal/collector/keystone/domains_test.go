@@ -8,8 +8,8 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/prometheus/client_golang/prometheus"
-	keystonedb "github.com/vexxhost/openstack_database_exporter/internal/db/keystone"
 	"github.com/vexxhost/openstack_database_exporter/internal/testutil"
+	keystonedb "github.com/vexxhost/openstackdb/keystone/db"
 )
 
 func TestDomainsCollector(t *testing.T) {
@@ -23,7 +23,7 @@ func TestDomainsCollector(t *testing.T) {
 				}).AddRow(
 					"default", "Default", "Owns users and tenants (i.e. projects) available on Identity API v2.", 1,
 				)
-				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetDomainMetrics)).WillReturnRows(domainRows)
+				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.ListDomains)).WillReturnRows(domainRows)
 			},
 			ExpectedMetrics: `# HELP openstack_identity_domain_info domain_info
 # TYPE openstack_identity_domain_info gauge
@@ -40,7 +40,7 @@ openstack_identity_domains 1
 				domainRows := sqlmock.NewRows([]string{
 					"id", "name", "description", "enabled",
 				})
-				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetDomainMetrics)).WillReturnRows(domainRows)
+				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.ListDomains)).WillReturnRows(domainRows)
 			},
 			ExpectedMetrics: `# HELP openstack_identity_domains domains
 # TYPE openstack_identity_domains gauge
@@ -56,7 +56,7 @@ openstack_identity_domains 0
 				}).AddRow(
 					"disabled-domain", "Disabled Domain", "A disabled domain", 0,
 				)
-				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetDomainMetrics)).WillReturnRows(domainRows)
+				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.ListDomains)).WillReturnRows(domainRows)
 			},
 			ExpectedMetrics: `# HELP openstack_identity_domain_info domain_info
 # TYPE openstack_identity_domain_info gauge
@@ -75,7 +75,7 @@ openstack_identity_domains 1
 				}).AddRow(
 					"domain-1", "Domain 1", "Domain description", nil,
 				)
-				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetDomainMetrics)).WillReturnRows(domainRows)
+				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.ListDomains)).WillReturnRows(domainRows)
 			},
 			ExpectedMetrics: `# HELP openstack_identity_domain_info domain_info
 # TYPE openstack_identity_domain_info gauge
@@ -88,7 +88,7 @@ openstack_identity_domains 1
 		{
 			Name: "database error on domain query",
 			SetupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetDomainMetrics)).WillReturnError(sql.ErrConnDone)
+				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.ListDomains)).WillReturnError(sql.ErrConnDone)
 			},
 			ExpectedMetrics: ``,
 		},

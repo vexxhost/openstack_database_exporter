@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	keystonedb "github.com/vexxhost/openstack_database_exporter/internal/db/keystone"
+	keystonedb "github.com/vexxhost/openstackdb/keystone/db"
 )
 
 const defaultTTL = 5 * time.Minute
@@ -59,7 +59,7 @@ func (r *Resolver) refresh() {
 		return
 	}
 
-	projects, err := r.keystoneDB.GetProjectMetrics(context.Background())
+	projects, err := r.keystoneDB.ListProjects(context.Background())
 	if err != nil {
 		r.logger.Error("Failed to load projects from keystone", "error", err)
 		return

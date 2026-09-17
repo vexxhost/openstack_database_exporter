@@ -6,7 +6,7 @@ import (
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	glancedb "github.com/vexxhost/openstack_database_exporter/internal/db/glance"
+	glancedb "github.com/vexxhost/openstackdb/glance/db"
 )
 
 var (
@@ -78,7 +78,7 @@ func (c *ImagesCollector) Describe(ch chan<- *prometheus.Desc) {
 func (c *ImagesCollector) Collect(ch chan<- prometheus.Metric) {
 	ctx := context.Background()
 
-	images, err := c.queries.GetAllImages(ctx)
+	images, err := c.queries.ImageGetAll(ctx)
 	if err != nil {
 		ch <- prometheus.MustNewConstMetric(imagesUpDesc, prometheus.GaugeValue, 0)
 

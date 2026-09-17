@@ -8,8 +8,8 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/prometheus/client_golang/prometheus"
-	keystonedb "github.com/vexxhost/openstack_database_exporter/internal/db/keystone"
 	"github.com/vexxhost/openstack_database_exporter/internal/testutil"
+	keystonedb "github.com/vexxhost/openstackdb/keystone/db"
 )
 
 func TestRegionsCollector(t *testing.T) {
@@ -23,7 +23,7 @@ func TestRegionsCollector(t *testing.T) {
 				}).AddRow(
 					"RegionOne", "", "",
 				)
-				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetRegionMetrics)).WillReturnRows(regionRows)
+				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.ListRegions)).WillReturnRows(regionRows)
 			},
 			ExpectedMetrics: `# HELP openstack_identity_regions regions
 # TYPE openstack_identity_regions gauge
@@ -37,7 +37,7 @@ openstack_identity_regions 1
 				regionRows := sqlmock.NewRows([]string{
 					"id", "description", "parent_region_id",
 				})
-				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetRegionMetrics)).WillReturnRows(regionRows)
+				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.ListRegions)).WillReturnRows(regionRows)
 			},
 			ExpectedMetrics: `# HELP openstack_identity_regions regions
 # TYPE openstack_identity_regions gauge
@@ -47,7 +47,7 @@ openstack_identity_regions 0
 		{
 			Name: "database error on region query",
 			SetupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.GetRegionMetrics)).WillReturnError(sql.ErrConnDone)
+				mock.ExpectQuery(regexp.QuoteMeta(keystonedb.ListRegions)).WillReturnError(sql.ErrConnDone)
 			},
 			ExpectedMetrics: ``,
 		},

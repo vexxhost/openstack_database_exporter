@@ -6,7 +6,7 @@ import (
 	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	keystonedb "github.com/vexxhost/openstack_database_exporter/internal/db/keystone"
+	keystonedb "github.com/vexxhost/openstackdb/keystone/db"
 )
 
 var (
@@ -60,7 +60,7 @@ func (c *ProjectsCollector) Describe(ch chan<- *prometheus.Desc) {
 func (c *ProjectsCollector) Collect(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
 
-	projects, err := c.queries.GetProjectMetrics(ctx)
+	projects, err := c.queries.ListProjects(ctx)
 	if err != nil {
 		c.logger.Error("Failed to query projects", "error", err)
 		return err
