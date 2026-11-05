@@ -35,7 +35,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: depot/build-push-action@5f3b3c2e5a00f0093de47f657aeaefcedff27d18 # v1.17.0
+      - uses: depot/build-push-action@0f27be7c41d76663a98518dfe68f1c46582242c4 # v1.19.0
         with:
           project: x0767t05sx
           platforms: linux/amd64,linux/arm64
