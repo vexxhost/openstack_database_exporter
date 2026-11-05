@@ -122,6 +122,12 @@ func NewServerCollector(logger *slog.Logger, novaDB *nova.Queries, novaAPIDB *no
 				[]string{"address_ipv4", "address_ipv6", "availability_zone", "flavor_id", "host_id", "hypervisor_hostname", "id", "instance_libvirt", "name", "status", "tenant_id", "user_id", "uuid"},
 				nil,
 			),
+			"server_task_state": prometheus.NewDesc(
+				prometheus.BuildFQName(Namespace, Subsystem, "server_task_state"),
+				"server_task_state",
+				[]string{"id", "task_state"},
+				nil,
+			),
 			"total_vms": prometheus.NewDesc(
 				prometheus.BuildFQName(Namespace, Subsystem, "total_vms"),
 				"total_vms",
@@ -227,6 +233,20 @@ func (c *ServerCollector) collectServerMetrics(ch chan<- prometheus.Metric) erro
 			instance.ProjectID.String,
 			instance.UserID.String,
 			instance.Uuid,
+		)
+
+		taskState := instance.TaskState.String
+		taskStateValue := 0.0
+		if taskState != "" {
+			taskStateValue = 1
+		}
+
+		ch <- prometheus.MustNewConstMetric(
+			c.serverMetrics["server_task_state"],
+			prometheus.GaugeValue,
+			taskStateValue,
+			instance.Uuid,
+			taskState,
 		)
 	}
 
