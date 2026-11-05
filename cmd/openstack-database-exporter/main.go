@@ -27,6 +27,10 @@ var (
 		"cinder.database-url",
 		"Cinder database connection URL (oslo.db format)",
 	).Envar("CINDER_DATABASE_URL").String()
+	designateDatabaseURL = kingpin.Flag(
+		"designate.database-url",
+		"Designate database connection URL (oslo.db format)",
+	).Envar("DESIGNATE_DATABASE_URL").String()
 	glanceDatabaseURL = kingpin.Flag(
 		"glance.database-url",
 		"Glance database connection URL (oslo.db format)",
@@ -92,6 +96,7 @@ func main() {
 
 	reg := collector.NewRegistry(collector.Config{
 		CinderDatabaseURL:    *cinderDatabaseURL,
+		DesignateDatabaseURL: *designateDatabaseURL,
 		GlanceDatabaseURL:    *glanceDatabaseURL,
 		HeatDatabaseURL:      *heatDatabaseURL,
 		IronicDatabaseURL:    *ironicDatabaseURL,

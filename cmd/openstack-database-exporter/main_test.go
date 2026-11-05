@@ -23,7 +23,7 @@ import (
 	itest "github.com/vexxhost/openstack_database_exporter/internal/testutil"
 )
 
-// TestIntegration_E2E_FullExporter starts MySQL containers for all 11 services,
+// TestIntegration_E2E_FullExporter starts MySQL containers for all 12 services,
 // seeds them with representative data, wires up the full exporter registry,
 // serves /metrics via an httptest server, and validates the Prometheus
 // exposition output.
@@ -37,6 +37,7 @@ func TestIntegration_E2E_FullExporter(t *testing.T) {
 		sqlDir+"/cinder/schema.sql",
 		sqlDir+"/cinder/indexes.sql",
 	)
+	designateRes := itest.NewMySQLContainerWithURL(t, "designate", sqlDir+"/designate/schema.sql")
 	glanceRes := itest.NewMySQLContainerWithURL(t, "glance", sqlDir+"/glance/schema.sql")
 	keystoneRes := itest.NewMySQLContainerWithURL(t, "keystone", sqlDir+"/keystone/schema.sql")
 	magnumRes := itest.NewMySQLContainerWithURL(t, "magnum", sqlDir+"/magnum/schema.sql")
@@ -57,7 +58,7 @@ func TestIntegration_E2E_FullExporter(t *testing.T) {
 	)
 	heatRes := itest.NewMySQLContainerWithURL(t, "heat", sqlDir+"/heat/schema.sql")
 
-	t.Log("All 11 MariaDB containers are up")
+	t.Log("All 12 MariaDB containers are up")
 
 	// ── 2. Seed data ─────────────────────────────────────────────────────────
 
@@ -232,13 +233,14 @@ func TestIntegration_E2E_FullExporter(t *testing.T) {
 		 (3, 'proj-001', 'user-001', 'ram', 6144, 0)`,
 	)
 
-	t.Log("All 11 services seeded")
+	t.Log("All 12 services seeded")
 
 	// ── 3. Wire up the full exporter ─────────────────────────────────────────
 	logger := promslog.New(&promslog.Config{})
 
 	cfg := collector.Config{
 		CinderDatabaseURL:    cinderRes.URL,
+		DesignateDatabaseURL: designateRes.URL,
 		GlanceDatabaseURL:    glanceRes.URL,
 		KeystoneDatabaseURL:  keystoneRes.URL,
 		MagnumDatabaseURL:    magnumRes.URL,
@@ -288,6 +290,7 @@ func TestIntegration_E2E_FullExporter(t *testing.T) {
 	// Every service must emit its _up metric = 1
 	upMetrics := []string{
 		"openstack_cinder_up",
+		"openstack_designate_up",
 		"openstack_glance_up",
 		"openstack_identity_up",
 		"openstack_container_infra_up",
