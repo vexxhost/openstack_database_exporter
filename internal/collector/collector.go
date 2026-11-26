@@ -7,6 +7,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/cinder"
+	"github.com/vexxhost/openstack_database_exporter/internal/collector/designate"
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/glance"
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/heat"
 	"github.com/vexxhost/openstack_database_exporter/internal/collector/ironic"
@@ -28,6 +29,7 @@ const (
 
 type Config struct {
 	CinderDatabaseURL    string
+	DesignateDatabaseURL string
 	GlanceDatabaseURL    string
 	HeatDatabaseURL      string
 	IronicDatabaseURL    string
@@ -60,6 +62,7 @@ func NewRegistry(cfg Config, logger *slog.Logger) *prometheus.Registry {
 	projectResolver := project.NewResolver(logger, keystoneQueries, cfg.ProjectCacheTTL)
 
 	cinder.RegisterCollectors(reg, cfg.CinderDatabaseURL, projectResolver, logger)
+	designate.RegisterCollectors(reg, cfg.DesignateDatabaseURL, logger)
 	glance.RegisterCollectors(reg, cfg.GlanceDatabaseURL, logger)
 	heat.RegisterCollectors(reg, cfg.HeatDatabaseURL, logger)
 	ironic.RegisterCollectors(reg, cfg.IronicDatabaseURL, logger)
